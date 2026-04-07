@@ -476,7 +476,7 @@ export default function App() {
               {
                 title: "High School",
                 desc: "Rigorous academics preparing students for advanced levels with critical thinking and lab sciences.",
-                img: "/assets/generated/program-highschool.dim_400x300.jpg",
+                img: "/assets/highschool-019d6644-7f4e-7764-a376-56cbc711d6d7.jpg",
                 badge: "Grades 6–10",
               },
             ].map((prog, i) => (
