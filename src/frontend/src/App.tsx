@@ -93,7 +93,23 @@ const INQUIRY_CLASS_LEVELS = [
 ];
 
 // ─── Gallery images ──────────────────────────────────────────────────────────
-const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [];
+const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
+  {
+    id: "gallery-1",
+    src: "/assets/g1-019d663e-e0f7-72fd-bcb6-d7d22ad1ec34.jpg",
+    label: "School Life",
+  },
+  {
+    id: "gallery-2",
+    src: "/assets/g2-019d663e-e0e3-720c-b31b-9d179d871c11.jpg",
+    label: "School Life",
+  },
+  {
+    id: "gallery-3",
+    src: "/assets/g3-019d663e-e0ac-777d-b1eb-b8413b661767.jpg",
+    label: "School Life",
+  },
+];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(ts: bigint): string {
