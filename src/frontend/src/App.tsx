@@ -448,13 +448,13 @@ export default function App() {
               {
                 title: "Foundational Stage",
                 desc: "Play-based learning to build early foundations in literacy, numeracy, and social skills.",
-                img: "/assets/generated/program-preschool.dim_400x300.jpg",
+                img: "/assets/whatsapp_image_2026-04-07_at_9.25.17_am-019d663b-dd10-71e8-b103-fd15a73a3b4d.jpeg",
                 badge: "Ages 3–5",
               },
               {
                 title: "Primary School",
                 desc: "Core subjects with creative enrichment to develop confident, curious learners.",
-                img: "/assets/generated/program-primary.dim_400x300.jpg",
+                img: "/assets/solar_system-019d6625-0d4a-7437-a4a7-2dd885a2d4df.jpg",
                 badge: "Grades 1–5",
               },
               {
