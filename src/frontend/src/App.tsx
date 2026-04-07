@@ -64,7 +64,7 @@ const NAV_LINKS = [
 ];
 
 const CLASS_LEVELS = [
-  "Preschool",
+  "Foundational Stage",
   "Primary",
   "Grade 1",
   "Grade 2",
@@ -76,12 +76,10 @@ const CLASS_LEVELS = [
   "Grade 8",
   "Grade 9",
   "Grade 10",
-  "O-Levels",
-  "A-Levels",
 ];
 
 const INQUIRY_CLASS_LEVELS = [
-  "Preschool",
+  "Foundational Stage",
   "Grade 1",
   "Grade 2",
   "Grade 3",
@@ -92,53 +90,10 @@ const INQUIRY_CLASS_LEVELS = [
   "Grade 8",
   "Grade 9",
   "Grade 10",
-  "O-Levels",
-  "A-Levels",
 ];
 
 // ─── Gallery images ──────────────────────────────────────────────────────────
-const GALLERY_ITEMS = [
-  {
-    id: "campus",
-    src: "/assets/school_building_2-019d6609-7e7f-70e8-a81c-a18d56635b53.jpg",
-    label: "School Campus",
-  },
-  {
-    id: "preschool-activities",
-    src: "/assets/generated/program-preschool.dim_400x300.jpg",
-    label: "Preschool Activities",
-  },
-  {
-    id: "primary-classes",
-    src: "/assets/generated/program-primary.dim_400x300.jpg",
-    label: "Primary Classes",
-  },
-  {
-    id: "highschool-labs",
-    src: "/assets/generated/program-highschool.dim_400x300.jpg",
-    label: "High School Labs",
-  },
-  {
-    id: "alevels-studies",
-    src: "/assets/generated/program-alevels.dim_400x300.jpg",
-    label: "A-Levels Studies",
-  },
-  {
-    id: "sports-activities",
-    src: "/assets/generated/hero-school.dim_1400x600.jpg",
-    label: "Sports & Activities",
-  },
-  {
-    id: "art-creativity",
-    src: "/assets/generated/program-preschool.dim_400x300.jpg",
-    label: "Art & Creativity",
-  },
-  {
-    id: "science-projects",
-    src: "/assets/generated/program-primary.dim_400x300.jpg",
-    label: "Science Projects",
-  },
-];
+const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(ts: bigint): string {
@@ -380,10 +335,10 @@ export default function App() {
               Excellence in Education
             </span>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gold mb-4 leading-tight">
             Mehjoor Educational
             <br />
-            <span className="text-gold">Institute</span>
+            Institute
           </h1>
           <p className="text-xl sm:text-2xl text-white/80 mb-8 font-sans">
             Nurturing Minds, Building Futures
@@ -432,8 +387,8 @@ export default function App() {
             <div>
               <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                 Mehjoor Educational Institute is committed to providing quality
-                education from Preschool to A-Levels, fostering academic
-                excellence and character development.
+                education from the Foundational Stage through High School,
+                fostering academic excellence and character development.
               </p>
               <p className="text-muted-foreground text-lg leading-relaxed mb-8">
                 Our dedicated faculty, modern facilities, and holistic
@@ -488,10 +443,10 @@ export default function App() {
               advanced levels
             </p>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "Preschool",
+                title: "Foundational Stage",
                 desc: "Play-based learning to build early foundations in literacy, numeracy, and social skills.",
                 img: "/assets/generated/program-preschool.dim_400x300.jpg",
                 badge: "Ages 3–5",
@@ -504,15 +459,9 @@ export default function App() {
               },
               {
                 title: "High School",
-                desc: "Rigorous academics preparing students for O-Levels with critical thinking and lab sciences.",
+                desc: "Rigorous academics preparing students for advanced levels with critical thinking and lab sciences.",
                 img: "/assets/generated/program-highschool.dim_400x300.jpg",
                 badge: "Grades 6–10",
-              },
-              {
-                title: "A-Levels",
-                desc: "Advanced international curriculum for university preparation across science, commerce, and arts.",
-                img: "/assets/generated/program-alevels.dim_400x300.jpg",
-                badge: "Ages 16–18",
               },
             ].map((prog, i) => (
               <Card
