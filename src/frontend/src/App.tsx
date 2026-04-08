@@ -374,10 +374,13 @@ export default function App() {
         id="home"
         className="min-h-screen flex items-center justify-center bg-navy-dark"
       >
-        <div className="text-center px-4">
+        <div className="text-center px-4 flex flex-col items-center">
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gold leading-tight">
             Mehjoor Educational Institute
           </h1>
+          <p className="mt-4 text-lg sm:text-xl lg:text-2xl text-white/80 tracking-wide font-light">
+            Building the Future Leaders of Tomorrow
+          </p>
         </div>
       </section>
 
