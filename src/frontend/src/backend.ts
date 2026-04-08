@@ -110,10 +110,11 @@ export interface Assessment {
     description: string;
     timestamp: bigint;
     classLevel: string;
+    fileUrl?: string;
 }
 export interface backendInterface {
     addAnnouncement(title: string, content: string): Promise<bigint>;
-    addAssessment(title: string, subject: string, classLevel: string, date: bigint, description: string): Promise<bigint>;
+    addAssessment(title: string, subject: string, classLevel: string, date: bigint, description: string, fileUrl: string | null): Promise<bigint>;
     addInquiry(name: string, classLevel: string, message: string): Promise<bigint>;
     getAnnouncement(id: bigint): Promise<Announcement>;
     getAnnouncements(): Promise<Array<Announcement>>;
@@ -124,6 +125,7 @@ export interface backendInterface {
     getOwner(): Promise<Principal | null>;
     setOwner(): Promise<void>;
 }
+import type { Assessment as _Assessment } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async addAnnouncement(arg0: string, arg1: string): Promise<bigint> {
@@ -140,17 +142,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addAssessment(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string): Promise<bigint> {
+    async addAssessment(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: string | null): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.addAssessment(arg0, arg1, arg2, arg3, arg4);
+                const result = await this.actor.addAssessment(arg0, arg1, arg2, arg3, arg4, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg5));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addAssessment(arg0, arg1, arg2, arg3, arg4);
+            const result = await this.actor.addAssessment(arg0, arg1, arg2, arg3, arg4, to_candid_opt_n1(this._uploadFile, this._downloadFile, arg5));
             return result;
         }
     }
@@ -200,28 +202,28 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getAssessment(arg0);
-                return result;
+                return from_candid_Assessment_n2(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAssessment(arg0);
-            return result;
+            return from_candid_Assessment_n2(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAssessments(): Promise<Array<Assessment>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAssessments();
-                return result;
+                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAssessments();
-            return result;
+            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
         }
     }
     async getInquiries(): Promise<Array<Inquiry>> {
@@ -256,14 +258,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getOwner();
-                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getOwner();
-            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
         }
     }
     async setOwner(): Promise<void> {
@@ -281,8 +283,50 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+function from_candid_Assessment_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Assessment): Assessment {
+    return from_candid_record_n3(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
+}
+function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+    return value.length === 0 ? null : value[0];
+}
+function from_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: bigint;
+    title: string;
+    subject: string;
+    date: bigint;
+    description: string;
+    timestamp: bigint;
+    classLevel: string;
+    fileUrl: [] | [string];
+}): {
+    id: bigint;
+    title: string;
+    subject: string;
+    date: bigint;
+    description: string;
+    timestamp: bigint;
+    classLevel: string;
+    fileUrl?: string;
+} {
+    return {
+        id: value.id,
+        title: value.title,
+        subject: value.subject,
+        date: value.date,
+        description: value.description,
+        timestamp: value.timestamp,
+        classLevel: value.classLevel,
+        fileUrl: record_opt_to_undefined(from_candid_opt_n4(_uploadFile, _downloadFile, value.fileUrl))
+    };
+}
+function from_candid_vec_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Assessment>): Array<Assessment> {
+    return value.map((x)=>from_candid_Assessment_n2(_uploadFile, _downloadFile, x));
+}
+function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: string | null): [] | [string] {
+    return value === null ? candid_none() : candid_some(value);
 }
 export interface CreateActorOptions {
     agent?: Agent;

@@ -11,6 +11,7 @@ type Assessment =
    classLevel: text;
    date: int;
    description: text;
+   fileUrl: opt text;
    id: nat;
    subject: text;
    timestamp: int;
@@ -26,7 +27,7 @@ type Announcement =
 service : {
   addAnnouncement: (title: text, content: text) -> (nat);
   addAssessment: (title: text, subject: text, classLevel: text, date: 
-   int, description: text) -> (nat);
+   int, description: text, fileUrl: opt text) -> (nat);
   addInquiry: (name: text, classLevel: text, message: text) -> (nat);
   getAnnouncement: (id: nat) -> (Announcement) query;
   getAnnouncements: () -> (vec Announcement) query;

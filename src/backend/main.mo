@@ -6,7 +6,9 @@ import Map "mo:core/Map";
 import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
 import Principal "mo:core/Principal";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor self {
   type Inquiry = {
     id : Nat;
@@ -24,6 +26,7 @@ actor self {
     date : Int;
     description : Text;
     timestamp : Int;
+    fileUrl : ?Text;
   };
 
   type Announcement = {
@@ -80,7 +83,7 @@ actor self {
     inquiry.id;
   };
 
-  public shared ({ caller }) func addAssessment(title : Text, subject : Text, classLevel : Text, date : Int, description : Text) : async Nat {
+  public shared ({ caller }) func addAssessment(title : Text, subject : Text, classLevel : Text, date : Int, description : Text, fileUrl : ?Text) : async Nat {
     switch (owner) {
       case (null) { Runtime.trap("No owner set. Call setOwner first.") };
       case (?o) {
@@ -97,6 +100,7 @@ actor self {
       date;
       description;
       timestamp = Time.now();
+      fileUrl;
     };
     assessments.add(nextAssessmentId, assessment);
     nextAssessmentId += 1;
@@ -104,6 +108,14 @@ actor self {
   };
 
   public shared ({ caller }) func addAnnouncement(title : Text, content : Text) : async Nat {
+    switch (owner) {
+      case (null) { Runtime.trap("No owner set. Call setOwner first.") };
+      case (?o) {
+        if (caller != o) {
+          Runtime.trap("Unauthorized: only the owner can add announcements.");
+        };
+      };
+    };
     let announcement : Announcement = {
       id = nextAnnouncementId;
       title;

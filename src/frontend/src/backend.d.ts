@@ -28,10 +28,11 @@ export interface Assessment {
     description: string;
     timestamp: bigint;
     classLevel: string;
+    fileUrl?: string;
 }
 export interface backendInterface {
     addAnnouncement(title: string, content: string): Promise<bigint>;
-    addAssessment(title: string, subject: string, classLevel: string, date: bigint, description: string): Promise<bigint>;
+    addAssessment(title: string, subject: string, classLevel: string, date: bigint, description: string, fileUrl: string | null): Promise<bigint>;
     addInquiry(name: string, classLevel: string, message: string): Promise<bigint>;
     getAnnouncement(id: bigint): Promise<Announcement>;
     getAnnouncements(): Promise<Array<Announcement>>;

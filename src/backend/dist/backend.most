@@ -1,4 +1,4 @@
-// Version: 1.0.0
+// Version: 3.0.0
 type Announcement__674333181 =
   {content : Text; id : Nat; timestamp : Int; title : Text};
 type Assessment__1045919623 =
@@ -6,6 +6,7 @@ type Assessment__1045919623 =
     classLevel : Text;
     date : Int;
     description : Text;
+    fileUrl : ?Text;
     id : Nat;
     subject : Text;
     timestamp : Int;
@@ -18,11 +19,41 @@ type Inquiry__931573009 =
 type Internal__8484328<K, V> =
   {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
 type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
 type Nat__490723111 = Nat__920180692;
 type Nat__920180692 = Nat;
 type Node__46230540<K, V> =
   {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
-actor {
+type OldAssessment__463002464 =
+  {
+    classLevel : Text;
+    date : Int;
+    description : Text;
+    id : Nat;
+    subject : Text;
+    timestamp : Int;
+    title : Text
+  };
+actor ({
+  stable announcements :
+    {
+      var root : Node__46230540<Nat, Announcement__674333181>;
+      var size : Nat__490723111
+    };
+  in assessments : Map__605269027<Nat, OldAssessment__463002464>;
+  stable inquiries :
+    {
+      var root : Node__46230540<Nat, Inquiry__931573009>;
+      var size : Nat__490723111
+    };
+  stable var nextAnnouncementId : Nat;
+  stable var nextAssessmentId : Nat;
+  stable var nextInquiryId : Nat;
+  stable var owner : ?Principal
+}, {
   stable announcements :
     {
       var root : Node__46230540<Nat, Announcement__674333181>;
@@ -42,4 +73,4 @@ actor {
   stable var nextAssessmentId : Nat;
   stable var nextInquiryId : Nat;
   stable var owner : ?Principal
-};
+}) ;

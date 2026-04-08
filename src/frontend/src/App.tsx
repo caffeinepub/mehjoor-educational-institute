@@ -30,10 +30,13 @@ import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Award,
+  Bell,
   BookOpen,
   CalendarDays,
   CheckCircle,
   ClipboardList,
+  Download,
+  FileText,
   GraduationCap,
   Inbox,
   KeyRound,
@@ -42,52 +45,19 @@ import {
   MapPin,
   Menu,
   Phone,
+  PlusCircle,
   ShieldAlert,
   Users,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { createActor } from "./backend";
-
-// Local type definitions for backend data
-interface Assessment {
-  id: bigint;
-  title: string;
-  subject: string;
-  classLevel: string;
-  date: bigint;
-  description: string;
-}
-
-interface Inquiry {
-  id: bigint;
-  name: string;
-  classLevel: string;
-  message: string;
-  timestamp: bigint;
-}
-
-// Extended actor type for backend methods not yet in bindgen output
-interface SchoolActor {
-  getAssessments: () => Promise<Assessment[]>;
-  addAssessment: (
-    title: string,
-    subject: string,
-    classLevel: string,
-    date: bigint,
-    description: string,
-  ) => Promise<void>;
-  addInquiry: (
-    name: string,
-    classLevel: string,
-    message: string,
-  ) => Promise<void>;
-  getInquiries: () => Promise<Inquiry[]>;
-  getInquiriesOwner: () => Promise<Inquiry[]>;
-  getOwner: () => Promise<[] | [import("@icp-sdk/core/principal").Principal]>;
-  setOwner: () => Promise<void>;
-}
+import {
+  type Announcement,
+  type Assessment,
+  type Inquiry,
+  createActor,
+} from "./backend";
 
 // ─── Nav links ──────────────────────────────────────────────────────────────
 const NAV_LINKS = [
@@ -96,6 +66,7 @@ const NAV_LINKS = [
   { href: "#programs", label: "Programs" },
   { href: "#gallery", label: "Gallery" },
   { href: "#assessments", label: "Assessments" },
+  { href: "#notices", label: "Notices" },
   { href: "#admissions", label: "Admissions" },
   { href: "#inquiry", label: "Inquiry" },
   { href: "#submissions", label: "Submissions" },
@@ -176,8 +147,7 @@ function formatDate(ts: bigint): string {
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const { actor: rawActor, isFetching } = useActor(createActor);
-  const actor = rawActor as unknown as SchoolActor | null;
+  const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const { identity, login } = useInternetIdentity();
   const currentPrincipal = identity?.getPrincipal();
@@ -190,6 +160,12 @@ export default function App() {
   const [assessClass, setAssessClass] = useState("");
   const [assessDate, setAssessDate] = useState("");
   const [assessDesc, setAssessDesc] = useState("");
+  const [assessFile, setAssessFile] = useState<File | null>(null);
+  const assessFileRef = useRef<HTMLInputElement>(null);
+
+  // ── Notice form state ─────────────────────────────────────────────────────
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeContent, setNoticeContent] = useState("");
 
   // ── Inquiry form state ─────────────────────────────────────────────────────
   const [inquiryName, setInquiryName] = useState("");
@@ -209,24 +185,23 @@ export default function App() {
   });
 
   const { data: ownerResult, refetch: refetchOwner } = useQuery<
-    [] | [import("@icp-sdk/core/principal").Principal]
+    import("@icp-sdk/core/principal").Principal | null
   >({
     queryKey: ["owner"],
     queryFn: async () => {
-      if (!actor) return [];
+      if (!actor) return null;
       return actor.getOwner();
     },
     enabled: !!actor && !isFetching,
   });
 
-  const ownerPrincipal =
-    ownerResult && ownerResult.length > 0 ? ownerResult[0] : null;
+  const ownerPrincipal = ownerResult ?? null;
   const isOwner = !!(
     currentPrincipal &&
     ownerPrincipal &&
     currentPrincipal.toText() === ownerPrincipal.toText()
   );
-  const noOwnerSet = ownerResult !== undefined && ownerResult.length === 0;
+  const noOwnerSet = ownerResult !== undefined && ownerResult === null;
 
   const { data: inquirySubmissions = [], isLoading: submissionsLoading } =
     useQuery<Inquiry[]>({
@@ -238,17 +213,36 @@ export default function App() {
       enabled: !!actor && !isFetching && isOwner,
     });
 
+  const { data: notices = [], isLoading: noticesLoading } = useQuery<
+    Announcement[]
+  >({
+    queryKey: ["notices"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAnnouncements();
+    },
+    enabled: !!actor && !isFetching,
+  });
+
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addAssessmentMutation = useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
       const dateTs = BigInt(new Date(assessDate).getTime());
+      let fileUrl: string | null = null;
+      if (assessFile) {
+        const bytes = new Uint8Array(await assessFile.arrayBuffer());
+        const { ExternalBlob } = await import("./backend");
+        const blob = ExternalBlob.fromBytes(bytes);
+        fileUrl = blob.getDirectURL();
+      }
       return actor.addAssessment(
         assessTitle,
         assessSubject,
         assessClass,
         dateTs,
         assessDesc,
+        fileUrl,
       );
     },
     onSuccess: () => {
@@ -259,6 +253,8 @@ export default function App() {
       setAssessClass("");
       setAssessDate("");
       setAssessDesc("");
+      setAssessFile(null);
+      if (assessFileRef.current) assessFileRef.current.value = "";
     },
     onError: () => {
       toast.error("Failed to add assessment. Please try again.");
@@ -295,6 +291,22 @@ export default function App() {
     },
   });
 
+  const addNoticeMutation = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      return actor.addAnnouncement(noticeTitle, noticeContent);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notices"] });
+      toast.success("Notice posted successfully!");
+      setNoticeTitle("");
+      setNoticeContent("");
+    },
+    onError: () => {
+      toast.error("Failed to post notice. Please try again.");
+    },
+  });
+
   function handleAssessSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!assessTitle || !assessSubject || !assessClass || !assessDate) {
@@ -311,6 +323,15 @@ export default function App() {
       return;
     }
     addInquiryMutation.mutate();
+  }
+
+  function handleNoticeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!noticeTitle || !noticeContent) {
+      toast.error("Please fill in title and content.");
+      return;
+    }
+    addNoticeMutation.mutate();
   }
 
   function scrollTo(id: string) {
@@ -625,11 +646,26 @@ export default function App() {
                           </span>
                         </CardDescription>
                       </CardHeader>
-                      {a.description && (
+                      {(a.description || a.fileUrl) && (
                         <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground">
-                            {a.description}
-                          </p>
+                          {a.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {a.description}
+                            </p>
+                          )}
+                          {a.fileUrl && (
+                            <a
+                              href={a.fileUrl}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              data-ocid={`assessments.download.${i + 1}`}
+                              className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-navy border border-navy/30 rounded px-3 py-1.5 hover:bg-navy/5 transition-colors"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download File
+                            </a>
+                          )}
                         </CardContent>
                       )}
                     </Card>
@@ -815,6 +851,28 @@ export default function App() {
                             onChange={(e) => setAssessDesc(e.target.value)}
                           />
                         </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="assess-file">
+                            Attach File (PDF, Word, etc.) — Optional
+                          </Label>
+                          <input
+                            id="assess-file"
+                            type="file"
+                            ref={assessFileRef}
+                            data-ocid="assessments.file.input"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+                            onChange={(e) =>
+                              setAssessFile(e.target.files?.[0] ?? null)
+                            }
+                            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-secondary file:text-navy hover:file:bg-secondary/80 cursor-pointer border border-input rounded-md px-3 py-2"
+                          />
+                          {assessFile && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <FileText className="w-3.5 h-3.5" />
+                              {assessFile.name}
+                            </p>
+                          )}
+                        </div>
                         <Button
                           type="submit"
                           data-ocid="assessments.submit_button"
@@ -833,6 +891,233 @@ export default function App() {
                         {addAssessmentMutation.isError && (
                           <p
                             data-ocid="assessments.error_state"
+                            className="text-sm text-destructive text-center"
+                          >
+                            Something went wrong. Please try again.
+                          </p>
+                        )}
+                      </form>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+      {/* ── NOTICE BOARD ────────────────────────────────────────────────── */}
+      <section id="notices" className="py-20 bg-background">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-4xl font-bold text-navy section-heading">
+              Notice Board
+            </h2>
+            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
+              Important notices and announcements from the school administration
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-10">
+            {/* ── Notices list ── */}
+            <div>
+              <h3 className="font-display text-2xl font-bold text-navy mb-6 flex items-center gap-2">
+                <Bell className="w-6 h-6 text-gold" />
+                Posted Notices
+              </h3>
+
+              {noticesLoading ? (
+                <div
+                  data-ocid="notices.loading_state"
+                  className="flex items-center justify-center py-12"
+                >
+                  <Loader2 className="w-8 h-8 animate-spin text-navy" />
+                </div>
+              ) : notices.length === 0 ? (
+                <div
+                  data-ocid="notices.empty_state"
+                  className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
+                >
+                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No notices posted yet.</p>
+                  <p className="text-sm mt-1">
+                    The school owner can post notices using the form.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {[...notices]
+                    .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+                    .map((notice, i) => (
+                      <Card
+                        key={String(notice.id)}
+                        data-ocid={`notices.item.${i + 1}`}
+                        className="shadow-card border-l-4 border-l-gold"
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex items-start justify-between gap-3">
+                            <CardTitle className="font-display text-navy text-lg">
+                              {notice.title}
+                            </CardTitle>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              {formatDate(notice.timestamp)}
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {notice.content}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Post Notice form (owner-only) ── */}
+            <div>
+              {!identity ? (
+                <Card data-ocid="notices.login.card" className="shadow-card">
+                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                      <Lock className="w-7 h-7 text-navy" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-navy mb-2">
+                        Owner Login Required
+                      </h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+                        Only the school owner can post notices. Please log in
+                        with Internet Identity to continue.
+                      </p>
+                    </div>
+                    <Button
+                      data-ocid="notices.login.button"
+                      className="bg-navy hover:bg-navy-dark text-white px-8"
+                      onClick={login}
+                    >
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      Login
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : noOwnerSet ? (
+                <Card data-ocid="notices.claim.card" className="shadow-card">
+                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center">
+                      <Award className="w-7 h-7 text-gold" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-navy mb-2">
+                        Claim School Ownership
+                      </h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+                        No owner has been set yet. Claim ownership to manage
+                        notices.
+                      </p>
+                    </div>
+                    <Button
+                      data-ocid="notices.claim.button"
+                      className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
+                      disabled={claimOwnerMutation.isPending}
+                      onClick={() => claimOwnerMutation.mutate()}
+                    >
+                      {claimOwnerMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Claiming...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Claim Ownership
+                        </>
+                      )}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : !isOwner ? (
+                <Card
+                  data-ocid="notices.restricted.card"
+                  className="shadow-card"
+                >
+                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                      <Bell className="w-7 h-7 text-navy/50" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl font-bold text-navy mb-2">
+                        View Only
+                      </h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+                        You can view notices but only the school owner can post.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                /* Logged in AND is the owner */
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <h3 className="font-display text-2xl font-bold text-navy flex items-center gap-2">
+                      <PlusCircle className="w-6 h-6 text-gold" />
+                      Post a Notice
+                    </h3>
+                    <Badge
+                      data-ocid="notices.owner.badge"
+                      className="bg-green-100 text-green-800 border-green-200 text-xs font-medium"
+                    >
+                      <CheckCircle className="mr-1 h-3 w-3" />
+                      Logged in as owner
+                    </Badge>
+                  </div>
+                  <Card className="shadow-card">
+                    <CardContent className="pt-6">
+                      <form
+                        data-ocid="notices.form"
+                        onSubmit={handleNoticeSubmit}
+                        className="space-y-4"
+                      >
+                        <div className="space-y-1.5">
+                          <Label htmlFor="notice-title">Title *</Label>
+                          <Input
+                            id="notice-title"
+                            data-ocid="notices.title.input"
+                            placeholder="e.g. School Holiday Announcement"
+                            value={noticeTitle}
+                            onChange={(e) => setNoticeTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="notice-content">Content *</Label>
+                          <Textarea
+                            id="notice-content"
+                            data-ocid="notices.content.textarea"
+                            placeholder="Write your notice here..."
+                            rows={5}
+                            value={noticeContent}
+                            onChange={(e) => setNoticeContent(e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          type="submit"
+                          data-ocid="notices.submit_button"
+                          className="w-full bg-navy hover:bg-navy-dark text-white"
+                          disabled={addNoticeMutation.isPending}
+                        >
+                          {addNoticeMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Posting...
+                            </>
+                          ) : (
+                            "Post Notice"
+                          )}
+                        </Button>
+                        {addNoticeMutation.isError && (
+                          <p
+                            data-ocid="notices.error_state"
                             className="text-sm text-destructive text-center"
                           >
                             Something went wrong. Please try again.

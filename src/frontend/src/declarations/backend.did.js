@@ -22,6 +22,7 @@ export const Assessment = IDL.Record({
   'description' : IDL.Text,
   'timestamp' : IDL.Int,
   'classLevel' : IDL.Text,
+  'fileUrl' : IDL.Opt(IDL.Text),
 });
 export const Inquiry = IDL.Record({
   'id' : IDL.Nat,
@@ -34,7 +35,7 @@ export const Inquiry = IDL.Record({
 export const idlService = IDL.Service({
   'addAnnouncement' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
   'addAssessment' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text, IDL.Opt(IDL.Text)],
       [IDL.Nat],
       [],
     ),
@@ -66,6 +67,7 @@ export const idlFactory = ({ IDL }) => {
     'description' : IDL.Text,
     'timestamp' : IDL.Int,
     'classLevel' : IDL.Text,
+    'fileUrl' : IDL.Opt(IDL.Text),
   });
   const Inquiry = IDL.Record({
     'id' : IDL.Nat,
@@ -78,7 +80,7 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     'addAnnouncement' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
     'addAssessment' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text, IDL.Opt(IDL.Text)],
         [IDL.Nat],
         [],
       ),

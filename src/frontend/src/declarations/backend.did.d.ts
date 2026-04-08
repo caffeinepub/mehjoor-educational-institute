@@ -24,6 +24,7 @@ export interface Assessment {
   'description' : string,
   'timestamp' : bigint,
   'classLevel' : string,
+  'fileUrl' : [] | [string],
 }
 export interface Inquiry {
   'id' : bigint,
@@ -35,7 +36,7 @@ export interface Inquiry {
 export interface _SERVICE {
   'addAnnouncement' : ActorMethod<[string, string], bigint>,
   'addAssessment' : ActorMethod<
-    [string, string, string, bigint, string],
+    [string, string, string, bigint, string, [] | [string]],
     bigint
   >,
   'addInquiry' : ActorMethod<[string, string, string], bigint>,
