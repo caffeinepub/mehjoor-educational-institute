@@ -376,7 +376,7 @@ export default function App() {
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
         <img
-          src="/assets/school_building_2-019d621f-e2cd-70cc-a524-452e4c58d273.jpg"
+          src="/assets/school_bg_generated.jpg"
           alt="Mehjoor Educational Institute campus"
           className="absolute inset-0 w-full h-full object-cover"
         />
