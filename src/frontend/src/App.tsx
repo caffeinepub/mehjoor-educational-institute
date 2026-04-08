@@ -131,7 +131,7 @@ const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
   },
   {
     id: "gallery-6",
-    src: "/assets/untitled-019d6644-7f4e-7764-a376-56cbc711d6d7.jpg",
+    src: "/assets/whatsapp_image_2025-11-17_at_10.19.06_am-019d6c4f-b156-725c-8f24-f58936beb3bb.jpeg",
     label: "School Celebration",
   },
 ];
