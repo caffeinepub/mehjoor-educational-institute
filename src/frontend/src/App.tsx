@@ -126,8 +126,8 @@ const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
   },
   {
     id: "gallery-5",
-    src: "/assets/002-019d665c-273d-70f7-81b8-4b81f64df406.jpg",
-    label: "Baldiwas Celebration",
+    src: "/assets/whatsapp_image_2026-04-07_at_9.25.17_am-019d6c37-4b0c-706f-bb24-5ba48b86ca00.jpeg",
+    label: "School Life",
   },
   {
     id: "gallery-6",
