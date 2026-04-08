@@ -33,7 +33,6 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle,
-  ChevronDown,
   ClipboardList,
   GraduationCap,
   KeyRound,
@@ -373,50 +372,12 @@ export default function App() {
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section
         id="home"
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        className="min-h-screen flex items-center justify-center bg-navy-dark"
       >
-        <img
-          src="/assets/school_bg_generated.jpg"
-          alt="Mehjoor Educational Institute campus"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-navy/55" />
-
-        <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-gold/20 border border-gold/40 rounded-full px-4 py-1.5 mb-6">
-            <Award className="w-4 h-4 text-gold" />
-            <span className="text-gold text-sm font-medium">
-              Excellence in Education
-            </span>
-          </div>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gold mb-4 leading-tight">
-            Mehjoor Educational
-            <br />
-            Institute
+        <div className="text-center px-4">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gold leading-tight">
+            Mehjoor Educational Institute
           </h1>
-          <p className="text-xl sm:text-2xl text-white/80 mb-8 font-sans">
-            Nurturing Minds, Building Futures
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button
-              data-ocid="hero.admissions.primary_button"
-              size="lg"
-              className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
-              onClick={() => scrollTo("#admissions")}
-            >
-              Apply for Admission
-            </Button>
-          </div>
-          <div className="mt-16 flex justify-center">
-            <button
-              type="button"
-              onClick={() => scrollTo("#about")}
-              className="text-white/50 hover:text-gold transition-colors animate-bounce"
-              aria-label="Scroll down"
-            >
-              <ChevronDown className="w-8 h-8" />
-            </button>
-          </div>
         </div>
       </section>
 
