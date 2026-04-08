@@ -406,15 +406,6 @@ export default function App() {
             >
               Apply for Admission
             </Button>
-            <Button
-              data-ocid="hero.learnmore.secondary_button"
-              size="lg"
-              variant="outline"
-              className="border-white/50 text-white hover:bg-white/10 px-8"
-              onClick={() => scrollTo("#about")}
-            >
-              Learn More
-            </Button>
           </div>
           <div className="mt-16 flex justify-center">
             <button
