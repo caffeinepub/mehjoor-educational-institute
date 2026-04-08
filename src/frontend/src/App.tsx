@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import GalleryPage, { GALLERY_ITEMS } from "./GalleryPage";
 import LoginPage from "./LoginPage";
 import {
   type Announcement,
@@ -129,40 +130,6 @@ const INQUIRY_CLASS_LEVELS = [
   "Grade 10",
 ];
 
-// ─── Gallery images ──────────────────────────────────────────────────────────
-const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
-  {
-    id: "gallery-1",
-    src: "/assets/img-20250524-wa0005-019d664a-d692-7551-b6fb-985505a71b4d.jpg",
-    label: "School Life",
-  },
-  {
-    id: "gallery-2",
-    src: "/assets/img-20241108-wa0028-019d664a-d14a-74a4-bbf8-b0cf81110159.jpg",
-    label: "School Life",
-  },
-  {
-    id: "gallery-3",
-    src: "/assets/img-20241107-wa0004-019d664a-d275-703f-b48d-dfc631f12104.jpg",
-    label: "School Life",
-  },
-  {
-    id: "gallery-4",
-    src: "/assets/002-019d665c-273d-70f7-81b8-4b81f64df406.jpg",
-    label: "School Life",
-  },
-  {
-    id: "gallery-5",
-    src: "/assets/whatsapp_image_2026-04-07_at_9.25.17_am-019d6c37-4b0c-706f-bb24-5ba48b86ca00.jpeg",
-    label: "School Life",
-  },
-  {
-    id: "gallery-6",
-    src: "/assets/whatsapp_image_2025-11-17_at_10.19.06_am-019d6c4f-b156-725c-8f24-f58936beb3bb.jpeg",
-    label: "School Celebration",
-  },
-];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatDate(ts: bigint): string {
   return new Date(Number(ts)).toLocaleDateString("en-PK", {
@@ -174,7 +141,9 @@ function formatDate(ts: bigint): string {
 
 // ─── App Root (handles view switching) ───────────────────────────────────────
 export default function App() {
-  const [currentView, setCurrentView] = useState<"main" | "login">("main");
+  const [currentView, setCurrentView] = useState<"main" | "login" | "gallery">(
+    "main",
+  );
 
   const handleLoginSuccess = useCallback(() => {
     setCurrentView("main");
@@ -197,11 +166,31 @@ export default function App() {
     );
   }
 
-  return <MainApp onGoToLogin={() => setCurrentView("login")} />;
+  if (currentView === "gallery") {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <GalleryPage onBack={() => setCurrentView("main")} />
+      </>
+    );
+  }
+
+  return (
+    <MainApp
+      onGoToLogin={() => setCurrentView("login")}
+      onGoToGallery={() => setCurrentView("gallery")}
+    />
+  );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
-function MainApp({ onGoToLogin }: { onGoToLogin: () => void }) {
+function MainApp({
+  onGoToLogin,
+  onGoToGallery,
+}: {
+  onGoToLogin: () => void;
+  onGoToGallery: () => void;
+}) {
   const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
@@ -428,6 +417,8 @@ function MainApp({ onGoToLogin }: { onGoToLogin: () => void }) {
                       } else {
                         onGoToLogin();
                       }
+                    } else if (link.label === "Gallery") {
+                      onGoToGallery();
                     } else {
                       scrollTo(link.href);
                     }
@@ -478,6 +469,9 @@ function MainApp({ onGoToLogin }: { onGoToLogin: () => void }) {
                       } else {
                         onGoToLogin();
                       }
+                    } else if (link.label === "Gallery") {
+                      setMobileOpen(false);
+                      onGoToGallery();
                     } else {
                       scrollTo(link.href);
                     }
