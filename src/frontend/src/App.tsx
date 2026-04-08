@@ -376,11 +376,11 @@ export default function App() {
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
         <img
-          src="/assets/generated/hero-school.dim_1400x600.jpg"
+          src="/assets/school_building_2-019d621f-e2cd-70cc-a524-452e4c58d273.jpg"
           alt="Mehjoor Educational Institute campus"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-navy/75" />
+        <div className="absolute inset-0 bg-navy/55" />
 
         <div className="relative z-10 text-center px-4 sm:px-6 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-gold/20 border border-gold/40 rounded-full px-4 py-1.5 mb-6">
