@@ -496,7 +496,7 @@ export default function App() {
               {
                 title: "Foundational Stage",
                 desc: "Play-based learning to build early foundations in literacy, numeracy, and social skills.",
-                img: "/assets/img-20241108-wa0028-019d664a-d14a-74a4-bbf8-b0cf81110159.jpg",
+                img: "/assets/whatsapp_image_2026-04-07_at_9.25.17_am-019d6c44-d7d9-73ca-9133-f8daf4b6ccad.jpeg",
                 badge: "Ages 3–5",
               },
               {
