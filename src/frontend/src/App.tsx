@@ -126,12 +126,12 @@ const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
   },
   {
     id: "gallery-5",
-    src: "/assets/whatsapp_image_2025-11-17_at_10.19.35_am-019d6b35-dc32-75d5-8353-a0887bf47494.jpeg",
+    src: "/assets/002-019d665c-273d-70f7-81b8-4b81f64df406.jpg",
     label: "Baldiwas Celebration",
   },
   {
     id: "gallery-6",
-    src: "/assets/whatsapp_image_2025-11-17_at_10.19.06_am-019d664a-d76c-758f-9ef2-9f6954db3e48.jpeg",
+    src: "/assets/untitled-019d6644-7f4e-7764-a376-56cbc711d6d7.jpg",
     label: "School Celebration",
   },
 ];
@@ -496,7 +496,7 @@ export default function App() {
               {
                 title: "Foundational Stage",
                 desc: "Play-based learning to build early foundations in literacy, numeracy, and social skills.",
-                img: "/assets/whatsapp_image_2026-04-07_at_9.25.17_am-019d663b-dd10-71e8-b103-fd15a73a3b4d.jpeg",
+                img: "/assets/img-20241108-wa0028-019d664a-d14a-74a4-bbf8-b0cf81110159.jpg",
                 badge: "Ages 3–5",
               },
               {
