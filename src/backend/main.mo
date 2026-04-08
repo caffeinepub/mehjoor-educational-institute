@@ -119,6 +119,21 @@ actor self {
     inquiries.values().toArray();
   };
 
+  public shared ({ caller }) func getInquiriesOwner() : async [Inquiry] {
+    switch (owner) {
+      case (null) { Runtime.trap("No owner set.") };
+      case (?o) {
+        if (caller != o) {
+          Runtime.trap("Unauthorized");
+        };
+      };
+    };
+    let all = inquiries.values().toArray();
+    all.sort(func(a : Inquiry, b : Inquiry) : Order.Order {
+      Int.compare(b.timestamp, a.timestamp)
+    });
+  };
+
   public query ({ caller }) func getAssessment(id : Nat) : async Assessment {
     switch (assessments.get(id)) {
       case (null) { Runtime.trap("Assessment id " # id.toText() # " is not in the assessments map. ") };

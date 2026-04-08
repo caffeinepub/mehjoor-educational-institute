@@ -35,6 +35,7 @@ import {
   CheckCircle,
   ClipboardList,
   GraduationCap,
+  Inbox,
   KeyRound,
   Loader2,
   Lock,
@@ -59,6 +60,14 @@ interface Assessment {
   description: string;
 }
 
+interface Inquiry {
+  id: bigint;
+  name: string;
+  classLevel: string;
+  message: string;
+  timestamp: bigint;
+}
+
 // Extended actor type for backend methods not yet in bindgen output
 interface SchoolActor {
   getAssessments: () => Promise<Assessment[]>;
@@ -74,6 +83,8 @@ interface SchoolActor {
     classLevel: string,
     message: string,
   ) => Promise<void>;
+  getInquiries: () => Promise<Inquiry[]>;
+  getInquiriesOwner: () => Promise<Inquiry[]>;
   getOwner: () => Promise<[] | [import("@icp-sdk/core/principal").Principal]>;
   setOwner: () => Promise<void>;
 }
@@ -87,6 +98,7 @@ const NAV_LINKS = [
   { href: "#assessments", label: "Assessments" },
   { href: "#admissions", label: "Admissions" },
   { href: "#inquiry", label: "Inquiry" },
+  { href: "#submissions", label: "Submissions" },
   { href: "#contact", label: "Contact" },
 ];
 
@@ -216,6 +228,16 @@ export default function App() {
   );
   const noOwnerSet = ownerResult !== undefined && ownerResult.length === 0;
 
+  const { data: inquirySubmissions = [], isLoading: submissionsLoading } =
+    useQuery<Inquiry[]>({
+      queryKey: ["inquiries-owner"],
+      queryFn: async () => {
+        if (!actor) return [];
+        return actor.getInquiriesOwner();
+      },
+      enabled: !!actor && !isFetching && isOwner,
+    });
+
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addAssessmentMutation = useMutation({
     mutationFn: async () => {
@@ -299,7 +321,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-background">
       <Toaster richColors position="top-right" />
-
       {/* ── NAVBAR ──────────────────────────────────────────────────────── */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-navy shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -368,7 +389,6 @@ export default function App() {
           </div>
         )}
       </header>
-
       {/* ── HERO ────────────────────────────────────────────────────────── */}
       <section
         id="home"
@@ -383,7 +403,6 @@ export default function App() {
           </p>
         </div>
       </section>
-
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
       <section id="about" className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -439,7 +458,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── PROGRAMS ────────────────────────────────────────────────────── */}
       <section id="programs" className="py-20 bg-secondary/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -503,7 +521,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── GALLERY ─────────────────────────────────────────────────────── */}
       <section id="gallery" className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -539,7 +556,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── ASSESSMENTS ─────────────────────────────────────────────────── */}
       <section id="assessments" className="py-20 bg-secondary/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -831,7 +847,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── ADMISSIONS ──────────────────────────────────────────────────── */}
       <section id="admissions" className="py-20 bg-navy">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -912,7 +927,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── INQUIRY ─────────────────────────────────────────────────────── */}
       <section id="inquiry" className="py-20 bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1007,8 +1021,148 @@ export default function App() {
           </Card>
         </div>
       </section>
+      {/* ── INQUIRY SUBMISSIONS ─────────────────────────────────────────── */}
+      <section id="submissions" className="py-20 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-4xl font-bold text-navy section-heading">
+              Inquiry Submissions
+            </h2>
+            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
+              View all inquiry submissions from students and parents
+            </p>
+          </div>
 
-      {/* ── CONTACT ─────────────────────────────────────────────────────── */}
+          {!identity ? (
+            /* Not logged in */
+            <Card
+              data-ocid="submissions.login.card"
+              className="shadow-card max-w-sm mx-auto"
+            >
+              <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                  <Lock className="w-7 h-7 text-navy" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-navy mb-2">
+                    Login Required
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+                    Only the school owner can view inquiry submissions. Please
+                    log in with Internet Identity to continue.
+                  </p>
+                </div>
+                <Button
+                  data-ocid="submissions.login.button"
+                  className="bg-navy hover:bg-navy-dark text-white px-8"
+                  onClick={login}
+                >
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+              </CardContent>
+            </Card>
+          ) : !isOwner ? (
+            /* Logged in but not the owner */
+            <Card
+              data-ocid="submissions.restricted.card"
+              className="shadow-card max-w-sm mx-auto"
+            >
+              <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+                  <ShieldAlert className="w-7 h-7 text-red-500" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-navy mb-2">
+                    Access Restricted
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
+                    Inquiry submissions are restricted to the school owner only.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : submissionsLoading ? (
+            /* Owner — loading */
+            <div
+              data-ocid="submissions.loading_state"
+              className="flex items-center justify-center py-16"
+            >
+              <Loader2 className="w-8 h-8 animate-spin text-navy" />
+            </div>
+          ) : inquirySubmissions.length === 0 ? (
+            /* Owner — empty */
+            <div
+              data-ocid="submissions.empty_state"
+              className="text-center py-16 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
+            >
+              <Inbox className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium text-navy">No submissions yet.</p>
+              <p className="text-sm mt-1">
+                Inquiry form submissions will appear here once students submit
+                them.
+              </p>
+            </div>
+          ) : (
+            /* Owner — list */
+            <div data-ocid="submissions.list">
+              <div className="flex items-center gap-3 mb-6">
+                <Inbox className="w-5 h-5 text-gold" />
+                <span className="font-display text-lg font-semibold text-navy">
+                  {inquirySubmissions.length}{" "}
+                  {inquirySubmissions.length === 1
+                    ? "submission"
+                    : "submissions"}
+                </span>
+                <Badge
+                  data-ocid="submissions.owner.badge"
+                  className="bg-green-100 text-green-800 border-green-200 text-xs font-medium"
+                >
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  Owner view
+                </Badge>
+              </div>
+              <div className="space-y-4">
+                {[...inquirySubmissions]
+                  .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+                  .map((inq, i) => (
+                    <Card
+                      key={String(inq.id)}
+                      data-ocid={`submissions.item.${i + 1}`}
+                      className="shadow-card"
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <CardTitle className="font-display text-navy text-lg">
+                            {inq.name}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge
+                              variant="secondary"
+                              className="shrink-0 bg-secondary text-navy border-0 text-xs"
+                            >
+                              {inq.classLevel}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <CalendarDays className="w-3.5 h-3.5" />
+                              {formatDate(inq.timestamp)}
+                            </span>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {inq.message}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+      {/* ── CONTACT ─────────────────────────────────────────────────────── */}{" "}
       <section id="contact" className="py-20 bg-secondary/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -1075,7 +1229,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer className="bg-navy-dark text-white py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

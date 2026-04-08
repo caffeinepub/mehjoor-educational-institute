@@ -33,6 +33,7 @@ service : {
   getAssessment: (id: nat) -> (Assessment) query;
   getAssessments: () -> (vec Assessment) query;
   getInquiries: () -> (vec Inquiry) query;
+  getInquiriesOwner: () -> (vec Inquiry);
   getOwner: () -> (opt principal) query;
   setOwner: () -> ();
 }

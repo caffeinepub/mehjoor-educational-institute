@@ -120,6 +120,7 @@ export interface backendInterface {
     getAssessment(id: bigint): Promise<Assessment>;
     getAssessments(): Promise<Array<Assessment>>;
     getInquiries(): Promise<Array<Inquiry>>;
+    getInquiriesOwner(): Promise<Array<Inquiry>>;
     getOwner(): Promise<Principal | null>;
     setOwner(): Promise<void>;
 }
@@ -234,6 +235,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getInquiries();
+            return result;
+        }
+    }
+    async getInquiriesOwner(): Promise<Array<Inquiry>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getInquiriesOwner();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getInquiriesOwner();
             return result;
         }
     }

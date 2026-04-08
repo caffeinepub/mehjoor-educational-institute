@@ -44,6 +44,7 @@ export interface _SERVICE {
   'getAssessment' : ActorMethod<[bigint], Assessment>,
   'getAssessments' : ActorMethod<[], Array<Assessment>>,
   'getInquiries' : ActorMethod<[], Array<Inquiry>>,
+  'getInquiriesOwner' : ActorMethod<[], Array<Inquiry>>,
   'getOwner' : ActorMethod<[], [] | [Principal]>,
   'setOwner' : ActorMethod<[], undefined>,
 }
