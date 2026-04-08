@@ -147,6 +147,11 @@ const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
     src: "/assets/whatsapp_image_2025-11-17_at_10.19.35_am-019d6b35-dc32-75d5-8353-a0887bf47494.jpeg",
     label: "Baldiwas Celebration",
   },
+  {
+    id: "gallery-6",
+    src: "/assets/whatsapp_image_2025-11-17_at_10.19.06_am-019d664a-d76c-758f-9ef2-9f6954db3e48.jpeg",
+    label: "School Celebration",
+  },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
