@@ -43,6 +43,7 @@ import {
   Loader2,
   Lock,
   MapPin,
+  Megaphone,
   Menu,
   Phone,
   PlusCircle,
@@ -50,8 +51,9 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import LoginPage from "./LoginPage";
 import {
   type Announcement,
   type Assessment,
@@ -69,9 +71,34 @@ const NAV_LINKS = [
   { href: "#notices", label: "Notices" },
   { href: "#admissions", label: "Admissions" },
   { href: "#inquiry", label: "Inquiry" },
-  { href: "#submissions", label: "Submissions" },
   { href: "#contact", label: "Contact" },
+  { href: "#login-portal", label: "Login" },
 ];
+
+// ─── Login Portal tasks ───────────────────────────────────────────────────────
+const OWNER_TASKS = [
+  {
+    icon: ClipboardList,
+    title: "Manage Assessments",
+    description:
+      "Add and manage scheduled assessments with file attachments for students to download.",
+    href: "#assessments",
+  },
+  {
+    icon: Megaphone,
+    title: "Post Notices",
+    description:
+      "Write and publish notices for students and parents to view on the Notice Board.",
+    href: "#notices",
+  },
+  {
+    icon: Inbox,
+    title: "View Inquiry Submissions",
+    description:
+      "Review all inquiry form submissions from students and parents.",
+    href: "#submissions",
+  },
+] as const;
 
 const CLASS_LEVELS = [
   "Foundational Stage",
@@ -145,11 +172,39 @@ function formatDate(ts: bigint): string {
   });
 }
 
-// ─── App ─────────────────────────────────────────────────────────────────────
+// ─── App Root (handles view switching) ───────────────────────────────────────
 export default function App() {
+  const [currentView, setCurrentView] = useState<"main" | "login">("main");
+
+  const handleLoginSuccess = useCallback(() => {
+    setCurrentView("main");
+    setTimeout(() => {
+      document
+        .querySelector("#login-portal")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }, 150);
+  }, []);
+
+  if (currentView === "login") {
+    return (
+      <>
+        <Toaster richColors position="top-right" />
+        <LoginPage
+          onLoginSuccess={handleLoginSuccess}
+          onBack={() => setCurrentView("main")}
+        />
+      </>
+    );
+  }
+
+  return <MainApp onGoToLogin={() => setCurrentView("login")} />;
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function MainApp({ onGoToLogin }: { onGoToLogin: () => void }) {
   const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
-  const { identity, login } = useInternetIdentity();
+  const { identity } = useInternetIdentity();
   const currentPrincipal = identity?.getPrincipal();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [admissionsOpen, setAdmissionsOpen] = useState(false);
@@ -366,9 +421,24 @@ export default function App() {
                   type="button"
                   key={link.href}
                   data-ocid={`nav.${link.label.toLowerCase()}.link`}
-                  onClick={() => scrollTo(link.href)}
-                  className="px-3 py-2 text-sm text-white/80 hover:text-gold transition-colors rounded font-sans"
+                  onClick={() => {
+                    if (link.label === "Login") {
+                      if (identity) {
+                        scrollTo("#login-portal");
+                      } else {
+                        onGoToLogin();
+                      }
+                    } else {
+                      scrollTo(link.href);
+                    }
+                  }}
+                  className={
+                    link.label === "Login"
+                      ? "ml-2 px-3 py-1.5 text-sm bg-gold/20 border border-gold/40 text-gold hover:bg-gold/30 transition-colors rounded font-semibold font-sans flex items-center gap-1.5"
+                      : "px-3 py-2 text-sm text-white/80 hover:text-gold transition-colors rounded font-sans"
+                  }
                 >
+                  {link.label === "Login" && <Lock className="w-3.5 h-3.5" />}
                   {link.label}
                 </button>
               ))}
@@ -400,9 +470,25 @@ export default function App() {
                   type="button"
                   key={link.href}
                   data-ocid={`nav.mobile.${link.label.toLowerCase()}.link`}
-                  onClick={() => scrollTo(link.href)}
-                  className="text-left px-3 py-2.5 text-sm text-white/80 hover:text-gold transition-colors rounded"
+                  onClick={() => {
+                    if (link.label === "Login") {
+                      setMobileOpen(false);
+                      if (identity) {
+                        scrollTo("#login-portal");
+                      } else {
+                        onGoToLogin();
+                      }
+                    } else {
+                      scrollTo(link.href);
+                    }
+                  }}
+                  className={
+                    link.label === "Login"
+                      ? "text-left px-3 py-2.5 text-sm text-gold font-semibold flex items-center gap-2 hover:text-gold/80 transition-colors rounded"
+                      : "text-left px-3 py-2.5 text-sm text-white/80 hover:text-gold transition-colors rounded"
+                  }
                 >
+                  {link.label === "Login" && <Lock className="w-3.5 h-3.5" />}
                   {link.label}
                 </button>
               ))}
@@ -677,7 +763,7 @@ export default function App() {
             {/* ── Add Assessment form (owner-only) ── */}
             <div>
               {!identity ? (
-                /* Not logged in */
+                /* Not logged in — redirect to login portal */
                 <Card
                   data-ocid="assessments.login.card"
                   className="shadow-card"
@@ -688,20 +774,20 @@ export default function App() {
                     </div>
                     <div>
                       <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Owner Login Required
+                        Login Required
                       </h3>
                       <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
                         Only the school owner can add assessments. Please log in
-                        with Internet Identity to continue.
+                        to continue.
                       </p>
                     </div>
                     <Button
                       data-ocid="assessments.login.button"
                       className="bg-navy hover:bg-navy-dark text-white px-8"
-                      onClick={login}
+                      onClick={onGoToLogin}
                     >
                       <KeyRound className="mr-2 h-4 w-4" />
-                      Login
+                      Go to Login
                     </Button>
                   </CardContent>
                 </Card>
@@ -985,20 +1071,20 @@ export default function App() {
                     </div>
                     <div>
                       <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Owner Login Required
+                        Login Required
                       </h3>
                       <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        Only the school owner can post notices. Please log in
-                        with Internet Identity to continue.
+                        Only the school owner can post notices. Please log in to
+                        continue.
                       </p>
                     </div>
                     <Button
                       data-ocid="notices.login.button"
                       className="bg-navy hover:bg-navy-dark text-white px-8"
-                      onClick={login}
+                      onClick={onGoToLogin}
                     >
                       <KeyRound className="mr-2 h-4 w-4" />
-                      Login
+                      Go to Login
                     </Button>
                   </CardContent>
                 </Card>
@@ -1319,7 +1405,7 @@ export default function App() {
           </div>
 
           {!identity ? (
-            /* Not logged in */
+            /* Not logged in — redirect to login portal */
             <Card
               data-ocid="submissions.login.card"
               className="shadow-card max-w-sm mx-auto"
@@ -1334,16 +1420,16 @@ export default function App() {
                   </h3>
                   <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
                     Only the school owner can view inquiry submissions. Please
-                    log in with Internet Identity to continue.
+                    log in to continue.
                   </p>
                 </div>
                 <Button
                   data-ocid="submissions.login.button"
                   className="bg-navy hover:bg-navy-dark text-white px-8"
-                  onClick={login}
+                  onClick={onGoToLogin}
                 >
                   <KeyRound className="mr-2 h-4 w-4" />
-                  Login
+                  Go to Login
                 </Button>
               </CardContent>
             </Card>
@@ -1443,6 +1529,132 @@ export default function App() {
                     </Card>
                   ))}
               </div>
+            </div>
+          )}
+        </div>
+      </section>
+      {/* ── LOGIN PORTAL ────────────────────────────────────────────────── */}
+      <section id="login-portal" className="py-20 bg-secondary/60">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-4xl font-bold text-navy section-heading">
+              Owner Login
+            </h2>
+            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
+              Log in to access management tools for assessments, notices, and
+              inquiry submissions.
+            </p>
+          </div>
+
+          {/* Task cards */}
+          <div className="grid sm:grid-cols-3 gap-5 mb-10">
+            {OWNER_TASKS.map(({ icon: Icon, title, description, href }) => (
+              <Card
+                key={title}
+                data-ocid={`login-portal.task.${title.toLowerCase().replace(/\s+/g, "-")}`}
+                className="shadow-card hover:shadow-card-hover transition-shadow border-t-2 border-t-navy/30"
+              >
+                <CardContent className="pt-6 pb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-5 h-5 text-navy" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                        <h3 className="font-display font-bold text-navy text-base leading-tight">
+                          {title}
+                        </h3>
+                        <Lock
+                          className="w-3.5 h-3.5 text-gold shrink-0"
+                          aria-label="Login required"
+                        />
+                      </div>
+                      <p className="text-muted-foreground text-xs leading-relaxed">
+                        {description}
+                      </p>
+                      {identity && isOwner && (
+                        <button
+                          type="button"
+                          onClick={() => scrollTo(href)}
+                          className="mt-3 text-xs font-semibold text-navy underline underline-offset-2 hover:text-gold transition-colors"
+                        >
+                          Go to {title} →
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Login / logged-in state */}
+          {!identity ? (
+            <div
+              data-ocid="login-portal.login.area"
+              className="flex flex-col items-center gap-4"
+            >
+              <button
+                type="button"
+                data-ocid="login-portal.login.button"
+                onClick={onGoToLogin}
+                className="flex items-center gap-2 bg-navy hover:bg-navy-dark text-gold font-semibold py-3 px-10 rounded-lg transition-colors text-base shadow-card"
+              >
+                <KeyRound className="w-4 h-4" />
+                Login with Internet Identity
+              </button>
+              <p className="text-xs text-muted-foreground">
+                Secure, passwordless login — you will be taken to the login page
+              </p>
+            </div>
+          ) : (
+            <div
+              data-ocid="login-portal.logged-in.area"
+              className="flex flex-col items-center gap-4"
+            >
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-green-100 border border-green-200">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-green-800 text-sm font-semibold">
+                  {isOwner ? "Logged in as Owner" : "Logged in"}
+                </span>
+              </div>
+              {isOwner && (
+                <p className="text-xs text-muted-foreground text-center max-w-xs">
+                  You are logged in as the school owner. Use the links above to
+                  manage your content.
+                </p>
+              )}
+              {!isOwner && noOwnerSet && (
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-sm text-muted-foreground text-center max-w-xs">
+                    No owner is set yet. Claim ownership to manage school
+                    content.
+                  </p>
+                  <Button
+                    data-ocid="login-portal.claim.button"
+                    className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
+                    disabled={claimOwnerMutation.isPending}
+                    onClick={() => claimOwnerMutation.mutate()}
+                  >
+                    {claimOwnerMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Claiming…
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Claim Ownership
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              {!isOwner && !noOwnerSet && (
+                <p className="text-sm text-muted-foreground text-center max-w-xs">
+                  Access to management tools is restricted to the school owner.
+                </p>
+              )}
             </div>
           )}
         </div>
