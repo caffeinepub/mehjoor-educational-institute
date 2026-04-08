@@ -38,6 +38,6 @@ export interface backendInterface {
     getAssessment(id: bigint): Promise<Assessment>;
     getAssessments(): Promise<Array<Assessment>>;
     getInquiries(): Promise<Array<Inquiry>>;
+    getOwner(): Promise<Principal | null>;
     setOwner(): Promise<void>;
-    getOwner(): Promise<[] | [Principal]>;
 }

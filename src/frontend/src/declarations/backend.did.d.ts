@@ -44,6 +44,8 @@ export interface _SERVICE {
   'getAssessment' : ActorMethod<[bigint], Assessment>,
   'getAssessments' : ActorMethod<[], Array<Assessment>>,
   'getInquiries' : ActorMethod<[], Array<Inquiry>>,
+  'getOwner' : ActorMethod<[], [] | [Principal]>,
+  'setOwner' : ActorMethod<[], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

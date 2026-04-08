@@ -1,0 +1,38 @@
+type Inquiry = 
+ record {
+   classLevel: text;
+   id: nat;
+   message: text;
+   name: text;
+   timestamp: int;
+ };
+type Assessment = 
+ record {
+   classLevel: text;
+   date: int;
+   description: text;
+   id: nat;
+   subject: text;
+   timestamp: int;
+   title: text;
+ };
+type Announcement = 
+ record {
+   content: text;
+   id: nat;
+   timestamp: int;
+   title: text;
+ };
+service : {
+  addAnnouncement: (title: text, content: text) -> (nat);
+  addAssessment: (title: text, subject: text, classLevel: text, date: 
+   int, description: text) -> (nat);
+  addInquiry: (name: text, classLevel: text, message: text) -> (nat);
+  getAnnouncement: (id: nat) -> (Announcement) query;
+  getAnnouncements: () -> (vec Announcement) query;
+  getAssessment: (id: nat) -> (Assessment) query;
+  getAssessments: () -> (vec Assessment) query;
+  getInquiries: () -> (vec Inquiry) query;
+  getOwner: () -> (opt principal) query;
+  setOwner: () -> ();
+}

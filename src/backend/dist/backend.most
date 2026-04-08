@@ -1,0 +1,45 @@
+// Version: 1.0.0
+type Announcement__674333181 =
+  {content : Text; id : Nat; timestamp : Int; title : Text};
+type Assessment__1045919623 =
+  {
+    classLevel : Text;
+    date : Int;
+    description : Text;
+    id : Nat;
+    subject : Text;
+    timestamp : Int;
+    title : Text
+  };
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type Inquiry__931573009 =
+  {classLevel : Text; id : Nat; message : Text; name : Text; timestamp : Int};
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+actor {
+  stable announcements :
+    {
+      var root : Node__46230540<Nat, Announcement__674333181>;
+      var size : Nat__490723111
+    };
+  stable assessments :
+    {
+      var root : Node__46230540<Nat, Assessment__1045919623>;
+      var size : Nat__490723111
+    };
+  stable inquiries :
+    {
+      var root : Node__46230540<Nat, Inquiry__931573009>;
+      var size : Nat__490723111
+    };
+  stable var nextAnnouncementId : Nat;
+  stable var nextAssessmentId : Nat;
+  stable var nextInquiryId : Nat;
+  stable var owner : ?Principal
+};

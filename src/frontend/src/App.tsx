@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/select";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { useActor, useInternetIdentity } from "@caffeineai/core-infrastructure";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Award,
@@ -47,9 +48,36 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Assessment } from "./backend.d";
-import { useActor } from "./hooks/useActor";
-import { useInternetIdentity } from "./hooks/useInternetIdentity";
+import { createActor } from "./backend";
+
+// Local type definitions for backend data
+interface Assessment {
+  id: bigint;
+  title: string;
+  subject: string;
+  classLevel: string;
+  date: bigint;
+  description: string;
+}
+
+// Extended actor type for backend methods not yet in bindgen output
+interface SchoolActor {
+  getAssessments: () => Promise<Assessment[]>;
+  addAssessment: (
+    title: string,
+    subject: string,
+    classLevel: string,
+    date: bigint,
+    description: string,
+  ) => Promise<void>;
+  addInquiry: (
+    name: string,
+    classLevel: string,
+    message: string,
+  ) => Promise<void>;
+  getOwner: () => Promise<[] | [import("@icp-sdk/core/principal").Principal]>;
+  setOwner: () => Promise<void>;
+}
 
 // ─── Nav links ──────────────────────────────────────────────────────────────
 const NAV_LINKS = [
@@ -96,18 +124,28 @@ const INQUIRY_CLASS_LEVELS = [
 const GALLERY_ITEMS: { id: string; src: string; label: string }[] = [
   {
     id: "gallery-1",
-    src: "/assets/g1-019d663e-e0f7-72fd-bcb6-d7d22ad1ec34.jpg",
+    src: "/assets/img-20250524-wa0005-019d664a-d692-7551-b6fb-985505a71b4d.jpg",
     label: "School Life",
   },
   {
     id: "gallery-2",
-    src: "/assets/g2-019d663e-e0e3-720c-b31b-9d179d871c11.jpg",
+    src: "/assets/img-20241108-wa0028-019d664a-d14a-74a4-bbf8-b0cf81110159.jpg",
     label: "School Life",
   },
   {
     id: "gallery-3",
-    src: "/assets/g3-019d663e-e0ac-777d-b1eb-b8413b661767.jpg",
+    src: "/assets/img-20241107-wa0004-019d664a-d275-703f-b48d-dfc631f12104.jpg",
     label: "School Life",
+  },
+  {
+    id: "gallery-4",
+    src: "/assets/002-019d665c-273d-70f7-81b8-4b81f64df406.jpg",
+    label: "School Life",
+  },
+  {
+    id: "gallery-5",
+    src: "/assets/whatsapp_image_2025-11-17_at_10.19.35_am-019d6b35-dc32-75d5-8353-a0887bf47494.jpeg",
+    label: "Baldiwas Celebration",
   },
 ];
 
@@ -122,7 +160,8 @@ function formatDate(ts: bigint): string {
 
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function App() {
-  const { actor, isFetching } = useActor();
+  const { actor: rawActor, isFetching } = useActor(createActor);
+  const actor = rawActor as unknown as SchoolActor | null;
   const queryClient = useQueryClient();
   const { identity, login } = useInternetIdentity();
   const currentPrincipal = identity?.getPrincipal();
@@ -153,19 +192,13 @@ export default function App() {
     enabled: !!actor && !isFetching,
   });
 
-  type ExtendedActor = NonNullable<typeof actor> & {
-    getOwner: () => Promise<[] | [import("@icp-sdk/core/principal").Principal]>;
-    setOwner: () => Promise<void>;
-  };
-  const extActor = actor as ExtendedActor | null;
-
   const { data: ownerResult, refetch: refetchOwner } = useQuery<
     [] | [import("@icp-sdk/core/principal").Principal]
   >({
     queryKey: ["owner"],
     queryFn: async () => {
-      if (!extActor) return [];
-      return extActor.getOwner();
+      if (!actor) return [];
+      return actor.getOwner();
     },
     enabled: !!actor && !isFetching,
   });
@@ -208,8 +241,8 @@ export default function App() {
 
   const claimOwnerMutation = useMutation({
     mutationFn: async () => {
-      if (!extActor) throw new Error("Not connected");
-      return extActor.setOwner();
+      if (!actor) throw new Error("Not connected");
+      return actor.setOwner();
     },
     onSuccess: () => {
       refetchOwner();
@@ -392,7 +425,7 @@ export default function App() {
       </section>
 
       {/* ── ABOUT ───────────────────────────────────────────────────────── */}
-      <section id="about" className="py-20 bg-white">
+      <section id="about" className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
@@ -432,7 +465,7 @@ export default function App() {
             </div>
             <div className="relative">
               <img
-                src="/assets/generated/hero-school.dim_1400x600.jpg"
+                src="/assets/sc-019d664b-d464-7608-af45-784bf604837a.jpeg"
                 alt="School campus grounds"
                 className="rounded-lg shadow-card w-full object-cover h-72"
               />
@@ -448,7 +481,7 @@ export default function App() {
       </section>
 
       {/* ── PROGRAMS ────────────────────────────────────────────────────── */}
-      <section id="programs" className="py-20 bg-secondary/40">
+      <section id="programs" className="py-20 bg-secondary/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
@@ -512,7 +545,7 @@ export default function App() {
       </section>
 
       {/* ── GALLERY ─────────────────────────────────────────────────────── */}
-      <section id="gallery" className="py-20 bg-white">
+      <section id="gallery" className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
@@ -548,7 +581,7 @@ export default function App() {
       </section>
 
       {/* ── ASSESSMENTS ─────────────────────────────────────────────────── */}
-      <section id="assessments" className="py-20 bg-secondary/40">
+      <section id="assessments" className="py-20 bg-secondary/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
@@ -577,7 +610,7 @@ export default function App() {
               ) : assessments.length === 0 ? (
                 <div
                   data-ocid="assessments.empty_state"
-                  className="text-center py-12 text-muted-foreground bg-white rounded-lg shadow-xs border border-border"
+                  className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
                 >
                   <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
                   <p className="font-medium">No assessments scheduled yet.</p>
@@ -921,7 +954,7 @@ export default function App() {
       </section>
 
       {/* ── INQUIRY ─────────────────────────────────────────────────────── */}
-      <section id="inquiry" className="py-20 bg-white">
+      <section id="inquiry" className="py-20 bg-background">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
@@ -1016,7 +1049,7 @@ export default function App() {
       </section>
 
       {/* ── CONTACT ─────────────────────────────────────────────────────── */}
-      <section id="contact" className="py-20 bg-secondary/40">
+      <section id="contact" className="py-20 bg-secondary/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">

@@ -120,6 +120,8 @@ export interface backendInterface {
     getAssessment(id: bigint): Promise<Assessment>;
     getAssessments(): Promise<Array<Assessment>>;
     getInquiries(): Promise<Array<Inquiry>>;
+    getOwner(): Promise<Principal | null>;
+    setOwner(): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -235,6 +237,37 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getOwner(): Promise<Principal | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOwner();
+                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOwner();
+            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setOwner(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setOwner();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setOwner();
+            return result;
+        }
+    }
+}
+function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [Principal]): Principal | null {
+    return value.length === 0 ? null : value[0];
 }
 export interface CreateActorOptions {
     agent?: Agent;

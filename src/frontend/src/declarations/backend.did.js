@@ -44,6 +44,8 @@ export const idlService = IDL.Service({
   'getAssessment' : IDL.Func([IDL.Nat], [Assessment], ['query']),
   'getAssessments' : IDL.Func([], [IDL.Vec(Assessment)], ['query']),
   'getInquiries' : IDL.Func([], [IDL.Vec(Inquiry)], ['query']),
+  'getOwner' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
+  'setOwner' : IDL.Func([], [], []),
 });
 
 export const idlInitArgs = [];
@@ -85,6 +87,8 @@ export const idlFactory = ({ IDL }) => {
     'getAssessment' : IDL.Func([IDL.Nat], [Assessment], ['query']),
     'getAssessments' : IDL.Func([], [IDL.Vec(Assessment)], ['query']),
     'getInquiries' : IDL.Func([], [IDL.Vec(Inquiry)], ['query']),
+    'getOwner' : IDL.Func([], [IDL.Opt(IDL.Principal)], ['query']),
+    'setOwner' : IDL.Func([], [], []),
   });
 };
 
