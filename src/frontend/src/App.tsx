@@ -33,27 +33,21 @@ import {
   Bell,
   BookOpen,
   CalendarDays,
-  CheckCircle,
   ClipboardList,
   Download,
   FileText,
   GraduationCap,
-  Inbox,
-  KeyRound,
   Loader2,
   Lock,
   MapPin,
-  Megaphone,
   Menu,
   Phone,
-  PlusCircle,
-  ShieldAlert,
   Users,
   X,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import GalleryPage, { GALLERY_ITEMS } from "./GalleryPage";
+import GalleryPage from "./GalleryPage";
 import LoginPage from "./LoginPage";
 import {
   type Announcement,
@@ -73,33 +67,8 @@ const NAV_LINKS = [
   { href: "#admissions", label: "Admissions" },
   { href: "#inquiry", label: "Inquiry" },
   { href: "#contact", label: "Contact" },
-  { href: "#login-portal", label: "Login" },
+  { href: "#login", label: "Login" },
 ];
-
-// ─── Login Portal tasks ───────────────────────────────────────────────────────
-const OWNER_TASKS = [
-  {
-    icon: ClipboardList,
-    title: "Manage Assessments",
-    description:
-      "Add and manage scheduled assessments with file attachments for students to download.",
-    href: "#assessments",
-  },
-  {
-    icon: Megaphone,
-    title: "Post Notices",
-    description:
-      "Write and publish notices for students and parents to view on the Notice Board.",
-    href: "#notices",
-  },
-  {
-    icon: Inbox,
-    title: "View Inquiry Submissions",
-    description:
-      "Review all inquiry form submissions from students and parents.",
-    href: "#submissions",
-  },
-] as const;
 
 const CLASS_LEVELS = [
   "Foundational Stage",
@@ -145,23 +114,11 @@ export default function App() {
     "main",
   );
 
-  const handleLoginSuccess = useCallback(() => {
-    setCurrentView("main");
-    setTimeout(() => {
-      document
-        .querySelector("#login-portal")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 150);
-  }, []);
-
   if (currentView === "login") {
     return (
       <>
         <Toaster richColors position="top-right" />
-        <LoginPage
-          onLoginSuccess={handleLoginSuccess}
-          onBack={() => setCurrentView("main")}
-        />
+        <LoginPageWrapper onBack={() => setCurrentView("main")} />
       </>
     );
   }
@@ -183,20 +140,12 @@ export default function App() {
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
-function MainApp({
-  onGoToLogin,
-  onGoToGallery,
-}: {
-  onGoToLogin: () => void;
-  onGoToGallery: () => void;
-}) {
+// ─── LoginPage wrapper with its own data hooks ────────────────────────────────
+function LoginPageWrapper({ onBack }: { onBack: () => void }) {
   const { actor, isFetching } = useActor(createActor);
   const queryClient = useQueryClient();
   const { identity } = useInternetIdentity();
   const currentPrincipal = identity?.getPrincipal();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [admissionsOpen, setAdmissionsOpen] = useState(false);
 
   // ── Assessment form state ──────────────────────────────────────────────────
   const [assessTitle, setAssessTitle] = useState("");
@@ -211,23 +160,7 @@ function MainApp({
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
 
-  // ── Inquiry form state ─────────────────────────────────────────────────────
-  const [inquiryName, setInquiryName] = useState("");
-  const [inquiryClass, setInquiryClass] = useState("");
-  const [inquiryMsg, setInquiryMsg] = useState("");
-
   // ── Queries ────────────────────────────────────────────────────────────────
-  const { data: assessments = [], isLoading: assessLoading } = useQuery<
-    Assessment[]
-  >({
-    queryKey: ["assessments"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getAssessments();
-    },
-    enabled: !!actor && !isFetching,
-  });
-
   const { data: ownerResult, refetch: refetchOwner } = useQuery<
     import("@icp-sdk/core/principal").Principal | null
   >({
@@ -247,15 +180,16 @@ function MainApp({
   );
   const noOwnerSet = ownerResult !== undefined && ownerResult === null;
 
-  const { data: inquirySubmissions = [], isLoading: submissionsLoading } =
-    useQuery<Inquiry[]>({
-      queryKey: ["inquiries-owner"],
-      queryFn: async () => {
-        if (!actor) return [];
-        return actor.getInquiriesOwner();
-      },
-      enabled: !!actor && !isFetching && isOwner,
-    });
+  const { data: assessments = [], isLoading: assessLoading } = useQuery<
+    Assessment[]
+  >({
+    queryKey: ["assessments"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAssessments();
+    },
+    enabled: !!actor && !isFetching,
+  });
 
   const { data: notices = [], isLoading: noticesLoading } = useQuery<
     Announcement[]
@@ -267,6 +201,16 @@ function MainApp({
     },
     enabled: !!actor && !isFetching,
   });
+
+  const { data: inquirySubmissions = [], isLoading: submissionsLoading } =
+    useQuery<Inquiry[]>({
+      queryKey: ["inquiries-owner"],
+      queryFn: async () => {
+        if (!actor) return [];
+        return actor.getInquiriesOwner();
+      },
+      enabled: !!actor && !isFetching && isOwner,
+    });
 
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addAssessmentMutation = useMutation({
@@ -319,22 +263,6 @@ function MainApp({
     },
   });
 
-  const addInquiryMutation = useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error("Not connected");
-      return actor.addInquiry(inquiryName, inquiryClass, inquiryMsg);
-    },
-    onSuccess: () => {
-      toast.success("Inquiry submitted! We will get back to you soon.");
-      setInquiryName("");
-      setInquiryClass("");
-      setInquiryMsg("");
-    },
-    onError: () => {
-      toast.error("Failed to submit inquiry. Please try again.");
-    },
-  });
-
   const addNoticeMutation = useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
@@ -351,14 +279,103 @@ function MainApp({
     },
   });
 
-  function handleAssessSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!assessTitle || !assessSubject || !assessClass || !assessDate) {
-      toast.error("Please fill in all required fields.");
-      return;
-    }
-    addAssessmentMutation.mutate();
-  }
+  return (
+    <LoginPage
+      onBack={onBack}
+      identity={identity ?? null}
+      isOwner={isOwner}
+      noOwnerSet={noOwnerSet}
+      claimOwnerMutation={claimOwnerMutation}
+      addAssessmentMutation={addAssessmentMutation}
+      addNoticeMutation={addNoticeMutation}
+      assessments={assessments}
+      assessLoading={assessLoading}
+      notices={notices}
+      noticesLoading={noticesLoading}
+      inquirySubmissions={inquirySubmissions}
+      submissionsLoading={submissionsLoading}
+      // Assessment form state
+      assessTitle={assessTitle}
+      setAssessTitle={setAssessTitle}
+      assessSubject={assessSubject}
+      setAssessSubject={setAssessSubject}
+      assessClass={assessClass}
+      setAssessClass={setAssessClass}
+      assessDate={assessDate}
+      setAssessDate={setAssessDate}
+      assessDesc={assessDesc}
+      setAssessDesc={setAssessDesc}
+      assessFile={assessFile}
+      setAssessFile={setAssessFile}
+      assessFileRef={assessFileRef}
+      // Notice form state
+      noticeTitle={noticeTitle}
+      setNoticeTitle={setNoticeTitle}
+      noticeContent={noticeContent}
+      setNoticeContent={setNoticeContent}
+      classLevels={CLASS_LEVELS}
+    />
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+function MainApp({
+  onGoToLogin,
+  onGoToGallery,
+}: {
+  onGoToLogin: () => void;
+  onGoToGallery: () => void;
+}) {
+  const { actor, isFetching } = useActor(createActor);
+  const queryClient = useQueryClient();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [admissionsOpen, setAdmissionsOpen] = useState(false);
+
+  // ── Inquiry form state ─────────────────────────────────────────────────────
+  const [inquiryName, setInquiryName] = useState("");
+  const [inquiryClass, setInquiryClass] = useState("");
+  const [inquiryMsg, setInquiryMsg] = useState("");
+
+  // ── Queries ────────────────────────────────────────────────────────────────
+  const { data: assessments = [], isLoading: assessLoading } = useQuery<
+    Assessment[]
+  >({
+    queryKey: ["assessments"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAssessments();
+    },
+    enabled: !!actor && !isFetching,
+  });
+
+  const { data: notices = [], isLoading: noticesLoading } = useQuery<
+    Announcement[]
+  >({
+    queryKey: ["notices"],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getAnnouncements();
+    },
+    enabled: !!actor && !isFetching,
+  });
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const addInquiryMutation = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      return actor.addInquiry(inquiryName, inquiryClass, inquiryMsg);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiries-owner"] });
+      toast.success("Inquiry submitted! We will get back to you soon.");
+      setInquiryName("");
+      setInquiryClass("");
+      setInquiryMsg("");
+    },
+    onError: () => {
+      toast.error("Failed to submit inquiry. Please try again.");
+    },
+  });
 
   function handleInquirySubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -367,15 +384,6 @@ function MainApp({
       return;
     }
     addInquiryMutation.mutate();
-  }
-
-  function handleNoticeSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!noticeTitle || !noticeContent) {
-      toast.error("Please fill in title and content.");
-      return;
-    }
-    addNoticeMutation.mutate();
   }
 
   function scrollTo(id: string) {
@@ -412,11 +420,7 @@ function MainApp({
                   data-ocid={`nav.${link.label.toLowerCase()}.link`}
                   onClick={() => {
                     if (link.label === "Login") {
-                      if (identity) {
-                        scrollTo("#login-portal");
-                      } else {
-                        onGoToLogin();
-                      }
+                      onGoToLogin();
                     } else if (link.label === "Gallery") {
                       onGoToGallery();
                     } else {
@@ -464,11 +468,7 @@ function MainApp({
                   onClick={() => {
                     if (link.label === "Login") {
                       setMobileOpen(false);
-                      if (identity) {
-                        scrollTo("#login-portal");
-                      } else {
-                        onGoToLogin();
-                      }
+                      onGoToLogin();
                     } else if (link.label === "Gallery") {
                       setMobileOpen(false);
                       onGoToGallery();
@@ -622,44 +622,9 @@ function MainApp({
           </div>
         </div>
       </section>
-      {/* ── GALLERY ─────────────────────────────────────────────────────── */}
-      <section id="gallery" className="py-20 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-4xl font-bold text-navy section-heading">
-              Gallery
-            </h2>
-            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
-              A glimpse into the vibrant life at Mehjoor Educational Institute
-            </p>
-          </div>
-          <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-            {GALLERY_ITEMS.map((item, i) => (
-              <div
-                key={item.id}
-                data-ocid={`gallery.item.${i + 1}`}
-                className="gallery-item break-inside-avoid rounded-lg overflow-hidden shadow-card cursor-pointer"
-              >
-                <img
-                  src={item.src}
-                  alt={item.label}
-                  className="w-full h-auto block"
-                />
-                <div className="overlay">
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <p className="text-white font-semibold text-sm">
-                      {item.label}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* ── ASSESSMENTS ─────────────────────────────────────────────────── */}
+      {/* ── ASSESSMENTS (public list only) ──────────────────────────────── */}
       <section id="assessments" className="py-20 bg-secondary/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
               Assessments
@@ -669,325 +634,91 @@ function MainApp({
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10">
-            {/* ── Assessment list ── */}
-            <div>
-              <h3 className="font-display text-2xl font-bold text-navy mb-6 flex items-center gap-2">
-                <ClipboardList className="w-6 h-6 text-gold" />
-                Scheduled Assessments
-              </h3>
+          <h3 className="font-display text-2xl font-bold text-navy mb-6 flex items-center gap-2">
+            <ClipboardList className="w-6 h-6 text-gold" />
+            Scheduled Assessments
+          </h3>
 
-              {assessLoading ? (
-                <div
-                  data-ocid="assessments.loading_state"
-                  className="flex items-center justify-center py-12"
-                >
-                  <Loader2 className="w-8 h-8 animate-spin text-navy" />
-                </div>
-              ) : assessments.length === 0 ? (
-                <div
-                  data-ocid="assessments.empty_state"
-                  className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
-                >
-                  <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">No assessments scheduled yet.</p>
-                  <p className="text-sm mt-1">
-                    Use the form to add the first assessment.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {assessments.map((a, i) => (
-                    <Card
-                      key={String(a.id)}
-                      data-ocid={`assessments.item.${i + 1}`}
-                      className="shadow-card"
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-3">
-                          <CardTitle className="font-display text-navy text-lg">
-                            {a.title}
-                          </CardTitle>
-                          <Badge
-                            variant="secondary"
-                            className="shrink-0 bg-secondary text-navy border-0 text-xs"
-                          >
-                            {a.classLevel}
-                          </Badge>
-                        </div>
-                        <CardDescription className="flex items-center gap-4 text-xs mt-1">
-                          <span className="flex items-center gap-1">
-                            <BookOpen className="w-3.5 h-3.5" />
-                            {a.subject}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="w-3.5 h-3.5" />
-                            {formatDate(a.date)}
-                          </span>
-                        </CardDescription>
-                      </CardHeader>
-                      {(a.description || a.fileUrl) && (
-                        <CardContent className="pt-0">
-                          {a.description && (
-                            <p className="text-sm text-muted-foreground">
-                              {a.description}
-                            </p>
-                          )}
-                          {a.fileUrl && (
-                            <a
-                              href={a.fileUrl}
-                              download
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              data-ocid={`assessments.download.${i + 1}`}
-                              className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-navy border border-navy/30 rounded px-3 py-1.5 hover:bg-navy/5 transition-colors"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              Download File
-                            </a>
-                          )}
-                        </CardContent>
-                      )}
-                    </Card>
-                  ))}
-                </div>
-              )}
+          {assessLoading ? (
+            <div
+              data-ocid="assessments.loading_state"
+              className="flex items-center justify-center py-12"
+            >
+              <Loader2 className="w-8 h-8 animate-spin text-navy" />
             </div>
-
-            {/* ── Add Assessment form (owner-only) ── */}
-            <div>
-              {!identity ? (
-                /* Not logged in — redirect to login portal */
+          ) : assessments.length === 0 ? (
+            <div
+              data-ocid="assessments.empty_state"
+              className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
+            >
+              <ClipboardList className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No assessments scheduled yet.</p>
+              <p className="text-sm mt-1">
+                Check back later for upcoming assessments.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {assessments.map((a, i) => (
                 <Card
-                  data-ocid="assessments.login.card"
+                  key={String(a.id)}
+                  data-ocid={`assessments.item.${i + 1}`}
                   className="shadow-card"
                 >
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                      <Lock className="w-7 h-7 text-navy" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Login Required
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        Only the school owner can add assessments. Please log in
-                        to continue.
-                      </p>
-                    </div>
-                    <Button
-                      data-ocid="assessments.login.button"
-                      className="bg-navy hover:bg-navy-dark text-white px-8"
-                      onClick={onGoToLogin}
-                    >
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      Go to Login
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : noOwnerSet ? (
-                /* Logged in and no owner set yet — claim ownership */
-                <Card
-                  data-ocid="assessments.claim.card"
-                  className="shadow-card"
-                >
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center">
-                      <Award className="w-7 h-7 text-gold" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Claim School Ownership
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        No owner has been set yet. As the first logged-in user,
-                        you can claim ownership to manage assessments.
-                      </p>
-                    </div>
-                    <Button
-                      data-ocid="assessments.claim.button"
-                      className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
-                      disabled={claimOwnerMutation.isPending}
-                      onClick={() => claimOwnerMutation.mutate()}
-                    >
-                      {claimOwnerMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Claiming...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Claim Ownership
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : !isOwner ? (
-                /* Logged in but not the owner */
-                <Card
-                  data-ocid="assessments.restricted.card"
-                  className="shadow-card"
-                >
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-                      <ShieldAlert className="w-7 h-7 text-red-500" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Access Restricted
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        Assessment management is restricted to the school owner.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                /* Logged in AND is the owner */
-                <>
-                  <div className="flex items-center gap-3 mb-6">
-                    <h3 className="font-display text-2xl font-bold text-navy flex items-center gap-2">
-                      <Award className="w-6 h-6 text-gold" />
-                      Add New Assessment
-                    </h3>
-                    <Badge
-                      data-ocid="assessments.owner.badge"
-                      className="bg-green-100 text-green-800 border-green-200 text-xs font-medium"
-                    >
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Logged in as owner
-                    </Badge>
-                  </div>
-                  <Card className="shadow-card">
-                    <CardContent className="pt-6">
-                      <form
-                        data-ocid="assessments.form"
-                        onSubmit={handleAssessSubmit}
-                        className="space-y-4"
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <CardTitle className="font-display text-navy text-lg">
+                        {a.title}
+                      </CardTitle>
+                      <Badge
+                        variant="secondary"
+                        className="shrink-0 bg-secondary text-navy border-0 text-xs"
                       >
-                        <div className="space-y-1.5">
-                          <Label htmlFor="assess-title">Title *</Label>
-                          <Input
-                            id="assess-title"
-                            data-ocid="assessments.title.input"
-                            placeholder="e.g. Mid-Term Mathematics Exam"
-                            value={assessTitle}
-                            onChange={(e) => setAssessTitle(e.target.value)}
-                          />
-                        </div>
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <Label htmlFor="assess-subject">Subject *</Label>
-                            <Input
-                              id="assess-subject"
-                              data-ocid="assessments.subject.input"
-                              placeholder="e.g. Mathematics"
-                              value={assessSubject}
-                              onChange={(e) => setAssessSubject(e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor="assess-date">Date *</Label>
-                            <Input
-                              id="assess-date"
-                              data-ocid="assessments.date.input"
-                              type="date"
-                              value={assessDate}
-                              onChange={(e) => setAssessDate(e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="assess-class">Class *</Label>
-                          <Select
-                            value={assessClass}
-                            onValueChange={setAssessClass}
-                          >
-                            <SelectTrigger
-                              id="assess-class"
-                              data-ocid="assessments.class.select"
-                            >
-                              <SelectValue placeholder="Select class" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {CLASS_LEVELS.map((level) => (
-                                <SelectItem key={level} value={level}>
-                                  {level}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="assess-desc">Description</Label>
-                          <Textarea
-                            id="assess-desc"
-                            data-ocid="assessments.description.textarea"
-                            placeholder="Topics covered, instructions, or additional notes..."
-                            rows={3}
-                            value={assessDesc}
-                            onChange={(e) => setAssessDesc(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="assess-file">
-                            Attach File (PDF, Word, etc.) — Optional
-                          </Label>
-                          <input
-                            id="assess-file"
-                            type="file"
-                            ref={assessFileRef}
-                            data-ocid="assessments.file.input"
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
-                            onChange={(e) =>
-                              setAssessFile(e.target.files?.[0] ?? null)
-                            }
-                            className="block w-full text-sm text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-secondary file:text-navy hover:file:bg-secondary/80 cursor-pointer border border-input rounded-md px-3 py-2"
-                          />
-                          {assessFile && (
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <FileText className="w-3.5 h-3.5" />
-                              {assessFile.name}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          type="submit"
-                          data-ocid="assessments.submit_button"
-                          className="w-full bg-navy hover:bg-navy-dark text-white"
-                          disabled={addAssessmentMutation.isPending}
+                        {a.classLevel}
+                      </Badge>
+                    </div>
+                    <CardDescription className="flex items-center gap-4 text-xs mt-1">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        {a.subject}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="w-3.5 h-3.5" />
+                        {formatDate(a.date)}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  {(a.description || a.fileUrl) && (
+                    <CardContent className="pt-0">
+                      {a.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {a.description}
+                        </p>
+                      )}
+                      {a.fileUrl && (
+                        <a
+                          href={a.fileUrl}
+                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          data-ocid={`assessments.download.${i + 1}`}
+                          className="inline-flex items-center gap-1.5 mt-3 text-xs font-medium text-navy border border-navy/30 rounded px-3 py-1.5 hover:bg-navy/5 transition-colors"
                         >
-                          {addAssessmentMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Adding...
-                            </>
-                          ) : (
-                            "Add Assessment"
-                          )}
-                        </Button>
-                        {addAssessmentMutation.isError && (
-                          <p
-                            data-ocid="assessments.error_state"
-                            className="text-sm text-destructive text-center"
-                          >
-                            Something went wrong. Please try again.
-                          </p>
-                        )}
-                      </form>
+                          <Download className="w-3.5 h-3.5" />
+                          Download File
+                        </a>
+                      )}
                     </CardContent>
-                  </Card>
-                </>
-              )}
+                  )}
+                </Card>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       </section>
-      {/* ── NOTICE BOARD ────────────────────────────────────────────────── */}
+      {/* ── NOTICE BOARD (public list only) ─────────────────────────────── */}
       <section id="notices" className="py-20 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-display text-4xl font-bold text-navy section-heading">
               Notice Board
@@ -997,219 +728,59 @@ function MainApp({
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-10">
-            {/* ── Notices list ── */}
-            <div>
-              <h3 className="font-display text-2xl font-bold text-navy mb-6 flex items-center gap-2">
-                <Bell className="w-6 h-6 text-gold" />
-                Posted Notices
-              </h3>
+          <h3 className="font-display text-2xl font-bold text-navy mb-6 flex items-center gap-2">
+            <Bell className="w-6 h-6 text-gold" />
+            Posted Notices
+          </h3>
 
-              {noticesLoading ? (
-                <div
-                  data-ocid="notices.loading_state"
-                  className="flex items-center justify-center py-12"
-                >
-                  <Loader2 className="w-8 h-8 animate-spin text-navy" />
-                </div>
-              ) : notices.length === 0 ? (
-                <div
-                  data-ocid="notices.empty_state"
-                  className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
-                >
-                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-medium">No notices posted yet.</p>
-                  <p className="text-sm mt-1">
-                    The school owner can post notices using the form.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {[...notices]
-                    .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
-                    .map((notice, i) => (
-                      <Card
-                        key={String(notice.id)}
-                        data-ocid={`notices.item.${i + 1}`}
-                        className="shadow-card border-l-4 border-l-gold"
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex items-start justify-between gap-3">
-                            <CardTitle className="font-display text-navy text-lg">
-                              {notice.title}
-                            </CardTitle>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                              <CalendarDays className="w-3.5 h-3.5" />
-                              {formatDate(notice.timestamp)}
-                            </span>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-0">
-                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                            {notice.content}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                </div>
-              )}
+          {noticesLoading ? (
+            <div
+              data-ocid="notices.loading_state"
+              className="flex items-center justify-center py-12"
+            >
+              <Loader2 className="w-8 h-8 animate-spin text-navy" />
             </div>
-
-            {/* ── Post Notice form (owner-only) ── */}
-            <div>
-              {!identity ? (
-                <Card data-ocid="notices.login.card" className="shadow-card">
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                      <Lock className="w-7 h-7 text-navy" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Login Required
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        Only the school owner can post notices. Please log in to
-                        continue.
+          ) : notices.length === 0 ? (
+            <div
+              data-ocid="notices.empty_state"
+              className="text-center py-12 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
+            >
+              <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p className="font-medium">No notices posted yet.</p>
+              <p className="text-sm mt-1">
+                Check back later for school notices and announcements.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {[...notices]
+                .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+                .map((notice, i) => (
+                  <Card
+                    key={String(notice.id)}
+                    data-ocid={`notices.item.${i + 1}`}
+                    className="shadow-card border-l-4 border-l-gold"
+                  >
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <CardTitle className="font-display text-navy text-lg">
+                          {notice.title}
+                        </CardTitle>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                          <CalendarDays className="w-3.5 h-3.5" />
+                          {formatDate(notice.timestamp)}
+                        </span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {notice.content}
                       </p>
-                    </div>
-                    <Button
-                      data-ocid="notices.login.button"
-                      className="bg-navy hover:bg-navy-dark text-white px-8"
-                      onClick={onGoToLogin}
-                    >
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      Go to Login
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : noOwnerSet ? (
-                <Card data-ocid="notices.claim.card" className="shadow-card">
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-gold/20 flex items-center justify-center">
-                      <Award className="w-7 h-7 text-gold" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        Claim School Ownership
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        No owner has been set yet. Claim ownership to manage
-                        notices.
-                      </p>
-                    </div>
-                    <Button
-                      data-ocid="notices.claim.button"
-                      className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
-                      disabled={claimOwnerMutation.isPending}
-                      onClick={() => claimOwnerMutation.mutate()}
-                    >
-                      {claimOwnerMutation.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Claiming...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Claim Ownership
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : !isOwner ? (
-                <Card
-                  data-ocid="notices.restricted.card"
-                  className="shadow-card"
-                >
-                  <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                    <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                      <Bell className="w-7 h-7 text-navy/50" />
-                    </div>
-                    <div>
-                      <h3 className="font-display text-xl font-bold text-navy mb-2">
-                        View Only
-                      </h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                        You can view notices but only the school owner can post.
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                /* Logged in AND is the owner */
-                <>
-                  <div className="flex items-center gap-3 mb-6">
-                    <h3 className="font-display text-2xl font-bold text-navy flex items-center gap-2">
-                      <PlusCircle className="w-6 h-6 text-gold" />
-                      Post a Notice
-                    </h3>
-                    <Badge
-                      data-ocid="notices.owner.badge"
-                      className="bg-green-100 text-green-800 border-green-200 text-xs font-medium"
-                    >
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Logged in as owner
-                    </Badge>
-                  </div>
-                  <Card className="shadow-card">
-                    <CardContent className="pt-6">
-                      <form
-                        data-ocid="notices.form"
-                        onSubmit={handleNoticeSubmit}
-                        className="space-y-4"
-                      >
-                        <div className="space-y-1.5">
-                          <Label htmlFor="notice-title">Title *</Label>
-                          <Input
-                            id="notice-title"
-                            data-ocid="notices.title.input"
-                            placeholder="e.g. School Holiday Announcement"
-                            value={noticeTitle}
-                            onChange={(e) => setNoticeTitle(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="notice-content">Content *</Label>
-                          <Textarea
-                            id="notice-content"
-                            data-ocid="notices.content.textarea"
-                            placeholder="Write your notice here..."
-                            rows={5}
-                            value={noticeContent}
-                            onChange={(e) => setNoticeContent(e.target.value)}
-                          />
-                        </div>
-                        <Button
-                          type="submit"
-                          data-ocid="notices.submit_button"
-                          className="w-full bg-navy hover:bg-navy-dark text-white"
-                          disabled={addNoticeMutation.isPending}
-                        >
-                          {addNoticeMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Posting...
-                            </>
-                          ) : (
-                            "Post Notice"
-                          )}
-                        </Button>
-                        {addNoticeMutation.isError && (
-                          <p
-                            data-ocid="notices.error_state"
-                            className="text-sm text-destructive text-center"
-                          >
-                            Something went wrong. Please try again.
-                          </p>
-                        )}
-                      </form>
                     </CardContent>
                   </Card>
-                </>
-              )}
+                ))}
             </div>
-          </div>
+          )}
         </div>
       </section>
       {/* ── ADMISSIONS ──────────────────────────────────────────────────── */}
@@ -1386,274 +957,7 @@ function MainApp({
           </Card>
         </div>
       </section>
-      {/* ── INQUIRY SUBMISSIONS ─────────────────────────────────────────── */}
-      <section id="submissions" className="py-20 bg-background">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-4xl font-bold text-navy section-heading">
-              Inquiry Submissions
-            </h2>
-            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
-              View all inquiry submissions from students and parents
-            </p>
-          </div>
-
-          {!identity ? (
-            /* Not logged in — redirect to login portal */
-            <Card
-              data-ocid="submissions.login.card"
-              className="shadow-card max-w-sm mx-auto"
-            >
-              <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                  <Lock className="w-7 h-7 text-navy" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-navy mb-2">
-                    Login Required
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                    Only the school owner can view inquiry submissions. Please
-                    log in to continue.
-                  </p>
-                </div>
-                <Button
-                  data-ocid="submissions.login.button"
-                  className="bg-navy hover:bg-navy-dark text-white px-8"
-                  onClick={onGoToLogin}
-                >
-                  <KeyRound className="mr-2 h-4 w-4" />
-                  Go to Login
-                </Button>
-              </CardContent>
-            </Card>
-          ) : !isOwner ? (
-            /* Logged in but not the owner */
-            <Card
-              data-ocid="submissions.restricted.card"
-              className="shadow-card max-w-sm mx-auto"
-            >
-              <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
-                  <ShieldAlert className="w-7 h-7 text-red-500" />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl font-bold text-navy mb-2">
-                    Access Restricted
-                  </h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-                    Inquiry submissions are restricted to the school owner only.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : submissionsLoading ? (
-            /* Owner — loading */
-            <div
-              data-ocid="submissions.loading_state"
-              className="flex items-center justify-center py-16"
-            >
-              <Loader2 className="w-8 h-8 animate-spin text-navy" />
-            </div>
-          ) : inquirySubmissions.length === 0 ? (
-            /* Owner — empty */
-            <div
-              data-ocid="submissions.empty_state"
-              className="text-center py-16 text-muted-foreground bg-card rounded-lg shadow-xs border border-border"
-            >
-              <Inbox className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p className="font-medium text-navy">No submissions yet.</p>
-              <p className="text-sm mt-1">
-                Inquiry form submissions will appear here once students submit
-                them.
-              </p>
-            </div>
-          ) : (
-            /* Owner — list */
-            <div data-ocid="submissions.list">
-              <div className="flex items-center gap-3 mb-6">
-                <Inbox className="w-5 h-5 text-gold" />
-                <span className="font-display text-lg font-semibold text-navy">
-                  {inquirySubmissions.length}{" "}
-                  {inquirySubmissions.length === 1
-                    ? "submission"
-                    : "submissions"}
-                </span>
-                <Badge
-                  data-ocid="submissions.owner.badge"
-                  className="bg-green-100 text-green-800 border-green-200 text-xs font-medium"
-                >
-                  <CheckCircle className="mr-1 h-3 w-3" />
-                  Owner view
-                </Badge>
-              </div>
-              <div className="space-y-4">
-                {[...inquirySubmissions]
-                  .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
-                  .map((inq, i) => (
-                    <Card
-                      key={String(inq.id)}
-                      data-ocid={`submissions.item.${i + 1}`}
-                      className="shadow-card"
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-start justify-between gap-3 flex-wrap">
-                          <CardTitle className="font-display text-navy text-lg">
-                            {inq.name}
-                          </CardTitle>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge
-                              variant="secondary"
-                              className="shrink-0 bg-secondary text-navy border-0 text-xs"
-                            >
-                              {inq.classLevel}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <CalendarDays className="w-3.5 h-3.5" />
-                              {formatDate(inq.timestamp)}
-                            </span>
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-0">
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {inq.message}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-      {/* ── LOGIN PORTAL ────────────────────────────────────────────────── */}
-      <section id="login-portal" className="py-20 bg-secondary/60">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-4xl font-bold text-navy section-heading">
-              Owner Login
-            </h2>
-            <p className="text-muted-foreground mt-6 max-w-xl mx-auto">
-              Log in to access management tools for assessments, notices, and
-              inquiry submissions.
-            </p>
-          </div>
-
-          {/* Task cards */}
-          <div className="grid sm:grid-cols-3 gap-5 mb-10">
-            {OWNER_TASKS.map(({ icon: Icon, title, description, href }) => (
-              <Card
-                key={title}
-                data-ocid={`login-portal.task.${title.toLowerCase().replace(/\s+/g, "-")}`}
-                className="shadow-card hover:shadow-card-hover transition-shadow border-t-2 border-t-navy/30"
-              >
-                <CardContent className="pt-6 pb-6">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center shrink-0 mt-0.5">
-                      <Icon className="w-5 h-5 text-navy" />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <h3 className="font-display font-bold text-navy text-base leading-tight">
-                          {title}
-                        </h3>
-                        <Lock
-                          className="w-3.5 h-3.5 text-gold shrink-0"
-                          aria-label="Login required"
-                        />
-                      </div>
-                      <p className="text-muted-foreground text-xs leading-relaxed">
-                        {description}
-                      </p>
-                      {identity && isOwner && (
-                        <button
-                          type="button"
-                          onClick={() => scrollTo(href)}
-                          className="mt-3 text-xs font-semibold text-navy underline underline-offset-2 hover:text-gold transition-colors"
-                        >
-                          Go to {title} →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Login / logged-in state */}
-          {!identity ? (
-            <div
-              data-ocid="login-portal.login.area"
-              className="flex flex-col items-center gap-4"
-            >
-              <button
-                type="button"
-                data-ocid="login-portal.login.button"
-                onClick={onGoToLogin}
-                className="flex items-center gap-2 bg-navy hover:bg-navy-dark text-gold font-semibold py-3 px-10 rounded-lg transition-colors text-base shadow-card"
-              >
-                <KeyRound className="w-4 h-4" />
-                Login with Internet Identity
-              </button>
-              <p className="text-xs text-muted-foreground">
-                Secure, passwordless login — you will be taken to the login page
-              </p>
-            </div>
-          ) : (
-            <div
-              data-ocid="login-portal.logged-in.area"
-              className="flex flex-col items-center gap-4"
-            >
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-green-100 border border-green-200">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-green-800 text-sm font-semibold">
-                  {isOwner ? "Logged in as Owner" : "Logged in"}
-                </span>
-              </div>
-              {isOwner && (
-                <p className="text-xs text-muted-foreground text-center max-w-xs">
-                  You are logged in as the school owner. Use the links above to
-                  manage your content.
-                </p>
-              )}
-              {!isOwner && noOwnerSet && (
-                <div className="flex flex-col items-center gap-3">
-                  <p className="text-sm text-muted-foreground text-center max-w-xs">
-                    No owner is set yet. Claim ownership to manage school
-                    content.
-                  </p>
-                  <Button
-                    data-ocid="login-portal.claim.button"
-                    className="bg-gold hover:bg-gold-dark text-navy font-semibold px-8"
-                    disabled={claimOwnerMutation.isPending}
-                    onClick={() => claimOwnerMutation.mutate()}
-                  >
-                    {claimOwnerMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Claiming…
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Claim Ownership
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-              {!isOwner && !noOwnerSet && (
-                <p className="text-sm text-muted-foreground text-center max-w-xs">
-                  Access to management tools is restricted to the school owner.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-      {/* ── CONTACT ─────────────────────────────────────────────────────── */}{" "}
+      {/* ── CONTACT ─────────────────────────────────────────────────────── */}
       <section id="contact" className="py-20 bg-secondary/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
