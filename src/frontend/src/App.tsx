@@ -985,7 +985,7 @@ function MainApp({
                 icon: BookOpen,
                 title: "Office Hours",
                 line1: "Monday – Saturday",
-                line2: "8:00 AM – 3:00 PM",
+                line2: "9:00 AM – 3:00 PM",
                 href: undefined,
               },
             ].map(({ icon: Icon, title, line1, line2, href }) => (
