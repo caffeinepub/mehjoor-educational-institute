@@ -851,15 +851,6 @@ function MainApp({
                 </Button>
               </DialogContent>
             </Dialog>
-            <Button
-              data-ocid="admissions.inquiry.secondary_button"
-              size="lg"
-              variant="outline"
-              className="border-white/40 text-white hover:bg-white/10 px-10"
-              onClick={() => scrollTo("#inquiry")}
-            >
-              Submit Inquiry
-            </Button>
           </div>
         </div>
       </section>
@@ -920,22 +911,6 @@ function MainApp({
                     onChange={(e) => setInquiryMsg(e.target.value)}
                   />
                 </div>
-                <Button
-                  type="submit"
-                  data-ocid="inquiry.submit_button"
-                  className="w-full bg-navy hover:bg-navy-dark text-white font-semibold"
-                  disabled={addInquiryMutation.isPending}
-                  size="lg"
-                >
-                  {addInquiryMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    "Submit Inquiry"
-                  )}
-                </Button>
                 {addInquiryMutation.isError && (
                   <p
                     data-ocid="inquiry.error_state"
